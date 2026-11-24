@@ -1,27 +1,30 @@
-import { Check } from "lucide-react";
-import { cn } from "@/components/ui";
+import { ArrowRight, Check, ChevronLeft, Phone } from "lucide-react";
+import { Button, cn } from "@/components/ui";
 
 export const STEPS = ["Password", "Photo", "Personal", "Payment", "About you", "Review"];
+const HELP = import.meta.env.VITE_HELP_PHONE;
 
-// Two-column shell used by sign in, password and onboarding screens.
-export function AuthShell({ children, wide }) {
+// Two-column shell (design 28–34): book-cover collage on the left, form on the right.
+export function AuthShell({ children, name, footer }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-[minmax(0,38%)_1fr]">
+    <div className="grid min-h-screen bg-white lg:grid-cols-[minmax(0,42%)_1fr]">
       <aside className="relative hidden overflow-hidden bg-navy lg:block">
-        <div className="absolute inset-0 opacity-40 bg-[repeating-linear-gradient(115deg,rgba(255,255,255,.07)_0_70px,transparent_70px_96px),repeating-linear-gradient(25deg,rgba(255,255,255,.05)_0_110px,transparent_110px_150px)]" />
-        <div className="absolute inset-0 bg-linear-to-b from-navy/30 via-navy/60 to-navy" />
-        <div className="relative flex h-full flex-col justify-between p-10">
-          <div className="inline-flex w-fit rounded-2xl bg-white px-4 py-2.5 shadow-lg"><img src="/logo.png" alt="নবকথন" className="h-9" /></div>
-          <div className="space-y-3 text-white">
-            <span className="inline-flex rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-navy">Welcome to the Nobokothon family</span>
-            <p className="bn max-w-sm text-2xl leading-snug font-bold">আপনার বই, বিক্রি আর রয়্যালটি — সব এক জায়গায়।</p>
-            <p className="max-w-sm text-sm text-white/60">See your books, sales, royalty and withdraw money any time.</p>
+        <img src="/collage.jpg" alt="" className="absolute inset-0 size-full scale-110 object-cover" />
+        <div className="absolute inset-0 bg-linear-to-b from-navy/20 via-navy/55 to-navy" />
+        <div className="relative flex h-full flex-col justify-between p-12">
+          <div className="inline-flex w-fit rounded-2xl bg-white px-5 py-3 shadow-xl"><img src="/logo.png" alt="নবকথন" className="h-12" /></div>
+          <div className="space-y-4 text-white">
+            <span className="inline-flex rounded-full bg-amber-400 px-3.5 py-1 text-sm font-bold text-navy">Welcome to the Nobokothon family</span>
+            <h2 className="bn text-[42px] leading-tight font-bold">স্বাগতম,{name ? <><br />{name}</> : " লেখক"}</h2>
+            <p className="max-w-md text-[17px] leading-relaxed text-white/75">A few short steps and your author panel is ready. You can stop any time; we save as you go.</p>
+            {HELP && <p className="flex items-center gap-3 pt-4 text-white/80"><Phone className="size-4" /> Need help? <b className="text-white">{HELP}</b></p>}
           </div>
         </div>
       </aside>
-      <main className="flex flex-col bg-white px-5 py-8 md:px-14 lg:py-12">
-        <img src="/logo.png" alt="নবকথন" className="mb-8 h-8 w-fit lg:hidden" />
-        <div className={cn("w-full", wide ? "max-w-3xl" : "max-w-xl")}>{children}</div>
+      <main className="flex min-h-screen flex-col px-6 py-10 md:px-14 lg:py-14">
+        <img src="/logo.png" alt="নবকথন" className="mb-8 h-9 w-fit lg:hidden" />
+        <div className="w-full max-w-3xl flex-1">{children}</div>
+        {footer && <div className="mt-10 w-full max-w-3xl">{footer}</div>}
       </main>
     </div>
   );
@@ -29,16 +32,36 @@ export function AuthShell({ children, wide }) {
 
 export function Stepper({ step }) {
   return (
-    <div className="mb-10 grid grid-cols-6 gap-2">
+    <div className="mb-12 grid grid-cols-6 gap-3">
       {STEPS.map((label, index) => (
-        <div key={label} className="space-y-2">
-          <div className={cn("h-1 rounded-full", index < step ? "bg-emerald-500" : index === step ? "bg-brand-600" : "bg-slate-200")} />
-          <p className={cn("flex items-center gap-1 truncate text-[11px] font-semibold", index < step ? "text-emerald-600" : index === step ? "text-brand-700" : "text-slate-400")}>
-            {index < step && <Check className="size-3" />}
+        <div key={label} className="space-y-3">
+          <div className={cn("h-1.5 rounded-full", index < step ? "bg-emerald-500" : index === step ? "bg-brand-700" : "bg-slate-200")} />
+          <p className={cn("flex items-center gap-1 truncate text-sm font-medium", index < step ? "text-emerald-600" : index === step ? "font-semibold text-brand-700" : "text-slate-400")}>
+            {index < step && <Check className="size-3.5" />}
             {label}
           </p>
         </div>
       ))}
+    </div>
+  );
+}
+
+export const StepTitle = ({ title, sub, badge }) => (
+  <div className="mb-8">
+    <h1 className="display flex items-center gap-3 text-[38px] font-bold text-navy">{title}{badge && <span className="rounded-full bg-slate-100 px-3 py-1 font-sans text-sm font-semibold text-slate-500">{badge}</span>}</h1>
+    {sub && <p className="mt-2 text-[17px] text-slate-500">{sub}</p>}
+  </div>
+);
+
+// Bottom bar: Back (outlined) on the left, "Save and continue" on the right.
+export function StepFooter({ onBack, onNext, loading, disabled, nextLabel = "Save and continue", extra }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      {onBack ? <Button variant="outline" size="lg" className="h-14 px-7 text-base" onClick={onBack}><ChevronLeft className="size-5" /> Back</Button> : <span />}
+      <div className="flex items-center gap-3">
+        {extra}
+        <Button size="lg" loading={loading} disabled={disabled} onClick={onNext} className="h-14 bg-linear-to-r from-brand-700 to-navy px-8 text-base shadow-xl shadow-navy/25 hover:from-navy hover:to-navy">{nextLabel} <ArrowRight className="size-5" /></Button>
+      </div>
     </div>
   );
 }

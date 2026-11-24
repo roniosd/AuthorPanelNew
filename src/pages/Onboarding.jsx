@@ -1,25 +1,20 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Info, Lock } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { ArrowRight, Check, CheckCircle2, Info, Lock } from "lucide-react";
+import { useAuth, skipOnboarding } from "@/lib/auth";
 import { errorText } from "@/lib/api";
-import { actions, useAction, useOnboarding, usePayMethods, useProfile } from "@/lib/queries";
+import { actions, useAction, useOnboarding, usePayMethods, usePosProfile, useProfile, useSummary } from "@/lib/queries";
 import { authorName, fmtDate, methodSub, methodTitle } from "@/lib/format";
-import { AuthShell, Stepper } from "@/components/AuthShell";
+import { AuthShell, StepFooter, StepTitle, Stepper } from "@/components/AuthShell";
 import PayMethodForm, { emptyMethod, methodErrors, toPayload } from "@/components/PayMethodForm";
 import { AboutFields, PersonalFields, PhotoPicker, aboutPayload, checkPhoto, fromProfile, personalErrors, personalPayload } from "@/components/ProfileFields";
-import { Avatar, Button, ErrorBox, Spinner, cn } from "@/components/ui";
+import { Avatar, Button, ErrorBox, Spinner } from "@/components/ui";
 
-const Heading = ({ title, sub, badge }) => (
-  <div className="mb-8">
-    <h1 className="flex items-center gap-3 text-3xl font-bold">{title}{badge && <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{badge}</span>}</h1>
-    {sub && <p className="mt-1 text-sm text-slate-500">{sub}</p>}
-  </div>
-);
+const Heading = StepTitle;
 
 function ReviewCard({ title, onEdit, rows }) {
   return (
-    <div className="rounded-2xl border border-slate-200 p-5">
+    <div className="rounded-2xl border border-slate-200 p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <p className="flex items-center gap-2 font-bold"><CheckCircle2 className="size-5 text-emerald-500" /> {title}</p>
         {onEdit && <button type="button" onClick={onEdit} className="text-xs font-semibold text-brand-600">Edit</button>}
@@ -34,10 +29,12 @@ function ReviewCard({ title, onEdit, rows }) {
 // Onboarding steps after the password: Photo → Personal → Payment → About you → Review → Done.
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const onboarding = useOnboarding();
   const profile = useProfile();
   const methods = usePayMethods();
+  const posProfile = usePosProfile();
+  const { data: summary } = useSummary();
   const finish = useAction(actions.finishOnboarding);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(fromProfile());
@@ -53,10 +50,13 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (profile.data) {
-      setForm(fromProfile(profile.data));
+      setForm((state) => ({ ...fromProfile(profile.data), education: state.education }));
       setShowPhoto(profile.data.showPhoto !== false);
     }
   }, [profile.data]);
+  useEffect(() => {
+    if (posProfile.data) setForm((state) => ({ ...state, education: posProfile.data.education || "" }));
+  }, [posProfile.data]);
 
   if (onboarding.isLoading || profile.isLoading) return <Spinner className="min-h-screen" />;
   if (onboarding.data && !onboarding.data.needed && step < 7) return <Navigate to="/" replace />;
@@ -120,14 +120,25 @@ export default function Onboarding() {
         methods.refetch();
       }, 4);
     },
-    4: () => run(() => (linked ? actions.saveProfile(aboutPayload(form)) : null), 5),
+    4: () => run(async () => {
+      await actions.saveEducation(form.education);
+      if (linked) await actions.saveProfile(aboutPayload(form));
+    }, 5),
     5: () => run(() => finish.mutateAsync(), 7),
   };
 
   const social = [form.facebook && "Facebook", form.youtube && "YouTube", form.website && "Website"].filter(Boolean).join(", ");
+  const footer = step < 7 && (
+    <div className="space-y-4">
+      {!linked && step !== 3 && step !== 5 && <ErrorBox error="Your website profile is not linked yet, so photo and personal details cannot be saved now. You can continue and add them later from Profile." />}
+      {error && <ErrorBox error={error} />}
+      <StepFooter onBack={step > 1 ? () => go(step - 1) : null} onNext={next[step]} loading={saving} disabled={step === 5 && !agree} nextLabel={step === 5 ? "Finish" : "Save and continue"} extra={step === 4 && <Button variant="ghost" size="lg" onClick={() => go(5)}>Skip</Button>} />
+    </div>
+  );
 
   return (
-    <AuthShell wide={step === 5}>
+    <AuthShell name={name} footer={footer}>
+      {step < 5 && <div className="-mt-2 mb-4 flex justify-end"><button type="button" onClick={() => { skipOnboarding(token); navigate("/", { replace: true }); }} className="rounded-full border border-slate-200 px-4 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-50">Skip for now</button></div>}
       <Stepper step={step === 7 ? 6 : step} />
 
       {step === 1 && (
@@ -140,7 +151,7 @@ export default function Onboarding() {
       {step === 2 && (
         <>
           <Heading title="Personal information" />
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-8 flex items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
             <Avatar name={name} photo={profile.data?.photo} />
             <div className="min-w-0 flex-1">
               <p className="bn font-bold">{name}</p>
@@ -155,8 +166,8 @@ export default function Onboarding() {
       {step === 3 && (
         <>
           <Heading title="How should we pay you?" sub="Royalty and withdraw money will be sent here." />
-          <PayMethodForm form={method} setForm={setMethod} errors={errors} />
-          <p className="mt-5 flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-3 text-xs text-brand-700"><Info className="size-4" /> This will be your default payment method. You can add more later from Pay Method.</p>
+          <PayMethodForm form={method} setForm={setMethod} errors={errors} layout="tiles" office={summary?.office} />
+          <p className="mt-6 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-600"><Info className="size-4 shrink-0" /> This will be your default payment method. You can add more later from Pay Method.</p>
         </>
       )}
 
@@ -173,8 +184,8 @@ export default function Onboarding() {
           <div className="grid gap-4 md:grid-cols-2">
             <ReviewCard title="Account" onEdit={() => go(1)} rows={[["Password", "Set"], ["Photo", photo.uploaded || profile.data?.photo ? "Added" : "Not added"], ["Photo on website", showPhoto ? "Shown" : "Hidden"]]} />
             <ReviewCard title="Personal information" onEdit={() => go(2)} rows={[["Phone", form.phone], ["Date of birth", form.dob && fmtDate(form.dob)], ["Gender", form.gender], [form.idType === "NID" ? "NID number" : "Birth certificate", `•••• ${(form.idType === "NID" ? form.nidNumber : form.birthCertificateNumber).slice(-4)}`]]} />
-            <ReviewCard title="Payment method" onEdit={() => go(3)} rows={[["Method", `${methodTitle(toPayload(method))} ${method.accountType}`], ["Number", methodSub(toPayload(method))], ["Account name", method.accountTitle]]} />
-            <ReviewCard title="About you" onEdit={() => go(4)} rows={[["Bio", form.bio ? "Added" : "Not added"], ["Social links", social]]} />
+            <ReviewCard title="Payment method" onEdit={() => go(3)} rows={[["Method", `${methodTitle(toPayload(method))}${method.kind === "cash" ? "" : ` ${method.accountType}`}`], ["Number", methodSub(toPayload(method))], ["Account name", method.kind === "cash" ? (method.collector === "other" ? method.collectorName : name) : method.accountTitle]]} />
+            <ReviewCard title="About you" onEdit={() => go(4)} rows={[["Bio", form.bio ? "Added" : "Not added"], ["Education", form.education], ["Social links", social]]} />
           </div>
           <label className="mt-6 flex items-center gap-3 text-sm font-semibold">
             <input type="checkbox" checked={agree} onChange={(event) => setAgree(event.target.checked)} className="size-4 accent-brand-600" />
@@ -189,23 +200,10 @@ export default function Onboarding() {
           <h1 className="text-3xl font-bold">Your author panel is ready</h1>
           <p className="max-w-md text-sm text-slate-500">Thank you for completing your profile. You can now see your books, sales, royalty and withdraw from your dashboard.</p>
           <div className="flex flex-wrap justify-center gap-2">{["Password set", "Personal information", "Payment method", "About you"].map((item) => <span key={item} className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"><Check className="size-3" /> {item}</span>)}</div>
-          <Button size="lg" className="mt-4" onClick={() => navigate("/", { replace: true })}>Go to dashboard <ArrowRight className="size-4" /></Button>
+          <Button size="lg" className="mt-4 h-14 bg-linear-to-r from-brand-700 to-navy px-8 text-base" onClick={() => navigate("/", { replace: true })}>Go to dashboard <ArrowRight className="size-5" /></Button>
         </div>
       )}
 
-      {step < 7 && (
-        <div className="mt-8 space-y-4">
-          {!linked && step !== 3 && step !== 5 && <ErrorBox error="Your website profile is not linked yet, so photo and personal details cannot be saved now. You can continue and add them later from Profile." />}
-          {error && <ErrorBox error={error} />}
-          <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" disabled={step === 1} onClick={() => go(step - 1)}><ArrowLeft className="size-4" /> Back</Button>
-            <div className="flex items-center gap-2">
-              {step === 4 && <Button variant="outline" onClick={() => go(5)}>Skip</Button>}
-              <Button size="lg" loading={saving} disabled={step === 5 && !agree} onClick={next[step]} className={cn(step === 5 && "min-w-40")}>{step === 5 ? "Finish" : "Continue"} <ArrowRight className="size-4" /></Button>
-            </div>
-          </div>
-        </div>
-      )}
     </AuthShell>
   );
 }

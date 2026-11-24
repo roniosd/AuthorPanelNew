@@ -1,8 +1,17 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, Inbox, Landmark, Loader2, X } from "lucide-react";
+import {
+  Banknote,
+  ChevronLeft,
+  Inbox,
+  Landmark,
+  Loader2,
+  X,
+} from "lucide-react";
 import { MFS, initial } from "@/lib/format";
 import { authorPhoto, bookCover } from "@/lib/api";
+import { PageLoader } from "@/components/Loader";
+import { imageUrl } from "@/lib/imageUrl";
 
 export const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -86,33 +95,6 @@ export function Field({ label, required, error, hint, children, className }) {
 export const Input = ({ className, ...props }) => (
   <input className={cn("input", className)} {...props} />
 );
-export function FieldInput({
-  icon: Icon,
-  label,
-  required,
-  error,
-  hint,
-  className,
-  fieldClassName,
-  ...inputProps
-}) {
-  return (
-    <Field
-      label={label}
-      required={required}
-      error={error}
-      hint={hint}
-      className={fieldClassName}
-    >
-      <div className="relative">
-        {Icon && (
-          <Icon className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" />
-        )}
-        <Input {...inputProps} className={cn(Icon && "pl-10", className)} />
-      </div>
-    </Field>
-  );
-}
 export const Textarea = ({ className, ...props }) => (
   <textarea
     className={cn("input h-auto min-h-24 py-3", className)}
@@ -151,10 +133,9 @@ export const STATUS = {
   cancel: { label: "Cancelled", tone: "red" },
 };
 
+// Kept for existing imports: the branded page loader (full screen when given min-h-screen).
 export const Spinner = ({ className }) => (
-  <div className={cn("grid place-items-center py-16", className)}>
-    <Loader2 className="size-6 animate-spin text-brand-600" />
-  </div>
+  <PageLoader full={className?.includes("min-h-screen")} />
 );
 
 export function Empty({
@@ -194,7 +175,7 @@ export function PageTitle({ title, back, right, sub }) {
           </Link>
         )}
         <div>
-          <h1 className="text-2xl font-bold text-ink">{title}</h1>
+          <h1 className="display text-[28px] font-bold text-navy">{title}</h1>
           {sub && <p className="text-sm text-slate-500">{sub}</p>}
         </div>
       </div>
@@ -268,7 +249,7 @@ export function Modal({ open, onClose, children, className }) {
 }
 
 export function Avatar({ name, photo, size = "size-10", className }) {
-  const src = authorPhoto(photo);
+  const src = imageUrl(photo, "", "/author");
   return src ? (
     <img
       src={src}
@@ -288,12 +269,13 @@ export function Avatar({ name, photo, size = "size-10", className }) {
   );
 }
 
-export function Cover({ cover, className }) {
+export function Cover({ cover, className, style }) {
   const src = bookCover(cover);
   return src ? (
     <img
       src={src}
       alt=""
+      style={style}
       className={cn("rounded-md object-cover shadow-sm", className)}
     />
   ) : (
@@ -306,29 +288,56 @@ export function Cover({ cover, className }) {
   );
 }
 
-export function MethodIcon({ method, className }) {
-  if (method?.mode === "mfs") {
-    const mfs = MFS[method.mfsType];
+// Logo tile for a pay method: bKash / Nagad logos, Rocket letter, bank and cash icons.
+export function MethodIcon({ method, kind, className }) {
+  const type =
+    kind || (method?.mode === "mfs" ? method.mfsType : method?.mode) || "bank";
+  if (type === "bkash" || type === "nagad")
     return (
       <div
         className={cn(
-          "grid size-10 place-items-center rounded-xl text-xs font-black text-white",
+          "grid size-10 place-items-center overflow-hidden rounded-xl border border-slate-100 bg-white p-1",
           className,
         )}
-        style={{ background: mfs?.color || "#64748b" }}
       >
-        {(mfs?.label || "M")[0]}
+        <img
+          src={`/${type}.png`}
+          alt={type}
+          className="size-full object-contain"
+        />
       </div>
     );
-  }
+  if (type === "rocket")
+    return (
+      <div
+        className={cn(
+          "grid size-10 place-items-center rounded-xl text-sm font-black text-white",
+          className,
+        )}
+        style={{ background: MFS.rocket.color }}
+      >
+        R
+      </div>
+    );
+  if (type === "cash")
+    return (
+      <div
+        className={cn(
+          "grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700",
+          className,
+        )}
+      >
+        <Banknote className="size-5" />
+      </div>
+    );
   return (
     <div
       className={cn(
-        "grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700",
+        "grid size-10 place-items-center rounded-xl bg-brand-50 text-brand-700",
         className,
       )}
     >
-      <Landmark className="size-4" />
+      <Landmark className="size-5" />
     </div>
   );
 }
@@ -423,3 +432,14 @@ export const InfoRow = ({ label, value, className }) => (
     <span className="text-right font-semibold">{value ?? "—"}</span>
   </div>
 );
+
+// "est." tag for royalty worked out from the sale price (old sales without a saved royalty).
+export const Est = ({ show }) =>
+  show ? (
+    <span
+      title="Estimated from cover price × your royalty rate"
+      className="ml-1 align-middle text-[10px] font-semibold text-amber-600"
+    >
+      est.
+    </span>
+  ) : null;

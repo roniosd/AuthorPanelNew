@@ -1,15 +1,20 @@
 import { useRef } from "react";
-import { Calendar, Camera, CreditCard, Eye, Globe, ImagePlus, MapPin, Phone } from "lucide-react";
-import { Avatar, Field, FieldInput, Input, Textarea, cn } from "@/components/ui";
+import { Award, Calendar, Camera, CreditCard, Eye, Globe, ImagePlus, MapPin, Smartphone } from "lucide-react";
+import { Avatar, Field, Input, Textarea, cn } from "@/components/ui";
 
 // E-commerce self-profile ↔ form helpers (fields accepted by /api/v1/author/self-profile PUT).
-export const emptyProfile = { phone: "", dob: "", gender: "", idType: "NID", nidNumber: "", birthCertificateNumber: "", address: "", bio: "", facebook: "", youtube: "", website: "" };
+export const emptyProfile = { phone: "", dob: "", gender: "", idType: "NID", nidNumber: "", birthCertificateNumber: "", address: "", bio: "", facebook: "", youtube: "", website: "", education: "" };
 
 const linkOf = (links, test) => links.find((link) => test.test(link)) || "";
-export const fromProfile = (profile = {}) => {
-  const links = String(profile.social || "").split(/[\s|,]+/).filter(Boolean);
+// Separate socialLinks first; older profiles only have one "social" text, so links are picked out of it.
+const socialOf = (profile) => {
+  if (profile.socialLinks && Object.values(profile.socialLinks).some(Boolean)) return { facebook: "", youtube: "", website: "", ...profile.socialLinks };
+  const links = String(profile.social || "").split(/[\s|,]+/).filter((part) => /\.[a-z]{2,}/i.test(part));
   const facebook = linkOf(links, /facebook|fb\.com/i);
   const youtube = linkOf(links, /youtube|youtu\.be/i);
+  return { facebook, youtube, website: links.find((link) => link !== facebook && link !== youtube) || "" };
+};
+export const fromProfile = (profile = {}) => {
   return {
     ...emptyProfile,
     phone: profile.phone || "",
@@ -20,13 +25,12 @@ export const fromProfile = (profile = {}) => {
     birthCertificateNumber: profile.birthCertificateNumber || "",
     address: profile.address || "",
     bio: profile.bio || "",
-    facebook,
-    youtube,
-    website: links.find((link) => link !== facebook && link !== youtube) || "",
+    ...socialOf(profile),
   };
 };
 export const personalPayload = (form) => ({ phone: form.phone.trim(), dob: form.dob, gender: form.gender || undefined, idType: form.idType, nidNumber: form.idType === "NID" ? form.nidNumber.trim() : "", birthCertificateNumber: form.idType === "Birth certificate" ? form.birthCertificateNumber.trim() : "", address: form.address.trim() });
-export const aboutPayload = (form) => ({ bio: form.bio.trim(), social: [form.facebook, form.youtube, form.website].map((link) => link.trim()).filter(Boolean).join(" | ") });
+export const socialPayload = (form) => ({ socialLinks: { facebook: form.facebook.trim(), youtube: form.youtube.trim(), website: form.website.trim() } });
+export const aboutPayload = (form) => ({ bio: form.bio.trim(), ...socialPayload(form) });
 
 export const personalErrors = (form) => {
   const errors = {};
@@ -39,35 +43,41 @@ export const personalErrors = (form) => {
   return errors;
 };
 
-const Choice = ({ active, onClick, children }) => <button type="button" onClick={onClick} className={cn("h-11 rounded-xl border text-sm font-semibold transition", active ? "border-brand-600 bg-brand-50 text-brand-700 ring-2 ring-brand-600/15" : "border-slate-200 hover:bg-slate-50")}>{children}</button>;
-const Icon = ({ icon: I, children }) => <div className="relative">{<I className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" />}{children}</div>;
+const Choice = ({ active, onClick, children }) => <button type="button" onClick={onClick} className={cn("h-12 rounded-xl border text-[15px] font-semibold transition", active ? "border-navy bg-brand-50 text-navy ring-1 ring-navy" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>{children}</button>;
+const Icon = ({ icon: I, children }) => <div className="relative">{<I className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" />}{children}</div>;
+export const SocialDot = ({ type }) => (type === "facebook" ? <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#1877f2] text-xs font-black text-white">f</span> : type === "youtube" ? <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#ff0000] text-[9px] text-white">▶</span> : <span className="grid size-6 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500"><Globe className="size-3.5" /></span>);
 
 export function PersonalFields({ form, setForm, errors = {} }) {
   const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
   return (
     <div className="grid gap-5 sm:grid-cols-2">
-      <FieldInput label="Phone" required error={errors.phone} icon={Phone} inputMode="tel" value={form.phone} onChange={set("phone")} placeholder="01XXX-XXXXXX" />
-      <FieldInput label="Date of birth" required error={errors.dob} icon={Calendar} type="date" value={form.dob} max={new Date().toISOString().slice(0, 10)} onChange={set("dob")} />
+      <Field label="Phone" required error={errors.phone}><Icon icon={Smartphone}><input className="input pl-11" inputMode="tel" value={form.phone} onChange={set("phone")} placeholder="01XXX-XXXXXX" /></Icon></Field>
+      <Field label="Date of birth" required error={errors.dob}><Icon icon={Calendar}><input type="date" className="input pl-11" value={form.dob} max={new Date().toISOString().slice(0, 10)} onChange={set("dob")} /></Icon></Field>
       <Field label="Gender" required error={errors.gender}><div className="grid grid-cols-2 gap-2">{["Male", "Female"].map((value) => <Choice key={value} active={form.gender === value} onClick={() => setForm({ ...form, gender: value })}>{value}</Choice>)}</div></Field>
       <Field label="ID type" required><div className="grid grid-cols-2 gap-2">{["NID", "Birth certificate"].map((value) => <Choice key={value} active={form.idType === value} onClick={() => setForm({ ...form, idType: value })}>{value}</Choice>)}</div></Field>
       <Field label={form.idType === "NID" ? "NID number" : "Birth certificate number"} required error={errors.id} className="sm:col-span-2">
-        <Icon icon={CreditCard}>{form.idType === "NID" ? <Input inputMode="numeric" value={form.nidNumber} onChange={set("nidNumber")} placeholder="NID number" className="pl-10" /> : <Input inputMode="numeric" value={form.birthCertificateNumber} onChange={set("birthCertificateNumber")} placeholder="Birth certificate number" className="pl-10" />}</Icon>
+        <Icon icon={CreditCard}>{form.idType === "NID" ? <input className="input pl-11" inputMode="numeric" value={form.nidNumber} onChange={set("nidNumber")} placeholder="NID number" /> : <input className="input pl-11" inputMode="numeric" value={form.birthCertificateNumber} onChange={set("birthCertificateNumber")} placeholder="Birth certificate number" />}</Icon>
       </Field>
-      <FieldInput label="Address" required error={errors.address} fieldClassName="sm:col-span-2" icon={MapPin} value={form.address} onChange={set("address")} placeholder="House, road, area, city" />
+      <Field label="Address" required error={errors.address} className="sm:col-span-2"><Icon icon={MapPin}><input className="input pl-11" value={form.address} onChange={set("address")} placeholder="House, road, area, city" /></Icon></Field>
     </div>
   );
 }
 
-export function AboutFields({ form, setForm }) {
+export function AboutFields({ form, setForm, socialOnly }) {
   const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
   return (
     <div className="space-y-5">
-      <Field label="Author bio" hint={`${form.bio.length} / 600`}><Textarea className="bn" maxLength={600} rows={4} value={form.bio} onChange={set("bio")} placeholder="Readers see this on your author page." /></Field>
+      {!socialOnly && <>
+      <Field label="Author bio">
+        <div className="relative"><Textarea className="bn min-h-28 pb-7" maxLength={600} rows={4} value={form.bio} onChange={set("bio")} placeholder="Readers see this on your author page." /><span className="absolute right-4 bottom-2 text-xs text-slate-400">{form.bio.length} / 600</span></div>
+      </Field>
+      <Field label="Education"><Icon icon={Award}><input className="input pl-11" maxLength={200} value={form.education} onChange={set("education")} placeholder="e.g. MA in Bangla, University of Dhaka" /></Icon></Field>
+      </>}
       <Field label="Social links">
         <div className="grid gap-3 sm:grid-cols-3">
-          <Icon icon={Globe}><input className="input pl-10" value={form.facebook} onChange={set("facebook")} placeholder="facebook.com/…" /></Icon>
-          <Icon icon={Globe}><input className="input pl-10" value={form.youtube} onChange={set("youtube")} placeholder="youtube.com/@…" /></Icon>
-          <Icon icon={Globe}><input className="input pl-10" value={form.website} onChange={set("website")} placeholder="Website link" /></Icon>
+          {[["facebook", "facebook.com/…"], ["youtube", "youtube.com/@…"], ["website", "Website link"]].map(([key, placeholder]) => (
+            <div key={key} className="relative"><span className="absolute top-1/2 left-3 -translate-y-1/2"><SocialDot type={key} /></span><input className="input pl-12" value={form[key]} onChange={set(key)} placeholder={placeholder} /></div>
+          ))}
         </div>
       </Field>
     </div>

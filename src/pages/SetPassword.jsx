@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
-import { AuthShell, Stepper } from "@/components/AuthShell";
+import { AuthShell, StepFooter, StepTitle, Stepper } from "@/components/AuthShell";
 import PasswordFields, { passwordChecks } from "@/components/PasswordFields";
-import { Button, ErrorBox } from "@/components/ui";
+import { ErrorBox } from "@/components/ui";
 
-// Onboarding step 1 (also used for "forgot password"): the emailed link carries ?token=.
+// Onboarding step 1 (design 28), also used by "forgot password": the emailed link carries ?token=.
 export default function SetPassword() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
@@ -19,8 +18,7 @@ export default function SetPassword() {
   const [loading, setLoading] = useState(false);
   const valid = passwordChecks(password, confirm).every((check) => check.ok);
 
-  const submit = async (event) => {
-    event.preventDefault();
+  const submit = async () => {
     if (!valid) return;
     setError("");
     setLoading(true);
@@ -42,22 +40,20 @@ export default function SetPassword() {
   if (!/^[a-f0-9]{64}$/i.test(token)) {
     return (
       <AuthShell>
-        <h1 className="text-3xl font-bold">This link is not valid</h1>
-        <p className="mt-2 text-sm text-slate-500">Open the latest link from your email, or ask for a new one.</p>
-        <Link to="/forgot-password" className="mt-6 inline-block text-sm font-semibold text-brand-600 hover:underline">Send a new link</Link>
+        <StepTitle title="This link is not valid" sub="Open the latest link from your email, or ask for a new one." />
+        <Link to="/forgot-password" className="font-semibold text-brand-700 hover:underline">Send a new link</Link>
       </AuthShell>
     );
   }
 
   return (
-    <AuthShell>
+    <AuthShell footer={<StepFooter onNext={submit} loading={loading} disabled={!valid} />}>
       <Stepper step={0} />
-      <h1 className="text-3xl font-bold">Set your password</h1>
-      <p className="mt-1 mb-8 text-sm text-slate-500">You will use this password from now on. The temporary link stops working.</p>
-      <form onSubmit={submit} className="space-y-6">
-        {error && <ErrorBox error={error} />}
+      <StepTitle title="Set your password" sub="You will use this password from now on. The temporary code stops working." />
+      {error && <div className="mb-5"><ErrorBox error={error} /></div>}
+      <form onSubmit={(event) => { event.preventDefault(); submit(); }}>
         <PasswordFields password={password} confirm={confirm} setPassword={setPassword} setConfirm={setConfirm} />
-        <Button type="submit" size="lg" loading={loading} disabled={!valid} className="w-full">Continue <ArrowRight className="size-4" /></Button>
+        <button type="submit" className="hidden" />
       </form>
     </AuthShell>
   );

@@ -1,0 +1,2 @@
+1. Loader
+2. In Withdraw page when i click to add pay method then it redireact to pay method page but i do't this

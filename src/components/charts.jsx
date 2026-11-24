@@ -70,24 +70,26 @@ export function AreaChart({ points = [], height = 260 }) {
   );
 }
 
-// Donut chart; segments = [{ value, color }].
-export function Donut({ segments = [], size = 180, stroke = 26, children }) {
-  const radius = (size - stroke) / 2;
+// Donut chart; segments = [{ value, color }]. Zero values are skipped; hover highlights one part.
+export function Donut({ segments = [], size = 190, stroke = 22, active = -1, onHover, children }) {
+  const radius = (size - stroke) / 2 - 4;
   const length = 2 * Math.PI * radius;
-  const total = segments.reduce((sum, item) => sum + item.value, 0) || 1;
+  const total = segments.reduce((sum, item) => sum + Math.max(0, item.value), 0);
+  const gap = segments.filter((item) => item.value > 0).length > 1 ? 3 : 0;
   let offset = 0;
   return (
-    <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+    <div className="relative grid place-items-center" style={{ width: size, height: size }} onMouseLeave={() => onHover?.(-1)}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#eef2f7" strokeWidth={stroke} />
-        {segments.map((item, index) => {
+        {total > 0 && segments.map((item, index) => {
+          if (!(item.value > 0)) return null;
           const part = (item.value / total) * length;
-          const circle = <circle key={index} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={item.color} strokeWidth={stroke} strokeDasharray={`${Math.max(part - 2, 0)} ${length}`} strokeDashoffset={-offset} />;
+          const circle = <circle key={index} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={item.color} strokeWidth={active === index ? stroke + 6 : stroke} strokeDasharray={`${Math.max(part - gap, 0.5)} ${length}`} strokeDashoffset={-offset} opacity={active >= 0 && active !== index ? 0.35 : 1} className="cursor-pointer transition-all duration-200" onMouseEnter={() => onHover?.(index)} />;
           offset += part;
           return circle;
         })}
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-center">{children}</div>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">{children}</div>
     </div>
   );
 }

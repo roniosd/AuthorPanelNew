@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MailCheck } from "lucide-react";
+import { ArrowRight, Mail, MailCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
-import { AuthShell } from "@/components/AuthShell";
-import { Button, ErrorBox, FieldInput } from "@/components/ui";
+import { AuthShell, StepTitle } from "@/components/AuthShell";
+import { Button, ErrorBox, Field } from "@/components/ui";
 
 export default function ForgotPassword() {
   const { forgotPassword } = useAuth();
@@ -24,25 +24,23 @@ export default function ForgotPassword() {
 
   return (
     <AuthShell>
-      {state.sent ? (
-        <div className="space-y-4">
-          <div className="grid size-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><MailCheck className="size-7" /></div>
-          <h1 className="text-3xl font-bold">Check your email</h1>
-          <p className="text-sm text-slate-500">If <b>{email}</b> belongs to an author account, a link to set a new password is on its way.</p>
-          <Link to="/login" className="inline-block text-sm font-semibold text-brand-600 hover:underline">Back to sign in</Link>
-        </div>
-      ) : (
-        <form onSubmit={submit} className="space-y-5">
-          <div>
-            <h1 className="text-3xl font-bold">Forgot password</h1>
-            <p className="mt-1 text-sm text-slate-500">We will email you a link to set a new password.</p>
+      <div className="mx-auto max-w-xl pt-6 lg:pt-20">
+        {state.sent ? (
+          <div className="space-y-5">
+            <div className="grid size-16 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><MailCheck className="size-8" /></div>
+            <StepTitle title="Check your email" sub={`If ${email} belongs to an author account, a link to set a new password is on its way.`} />
+            <Link to="/login" className="font-semibold text-brand-700 hover:underline">Back to sign in</Link>
           </div>
-          {state.error && <ErrorBox error={state.error} />}
-          <FieldInput label="Email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
-          <Button type="submit" loading={state.loading} className="w-full" size="lg">Send link</Button>
-          <Link to="/login" className="block text-center text-sm font-semibold text-slate-500 hover:text-ink">Back to sign in</Link>
-        </form>
-      )}
+        ) : (
+          <form onSubmit={submit} className="space-y-6">
+            <StepTitle title="Forgot password" sub="We will email you a link to set a new password." />
+            {state.error && <ErrorBox error={state.error} />}
+            <Field label="Email" required><div className="relative"><Mail className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" /><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="input h-14 pl-12" placeholder="you@example.com" /></div></Field>
+            <Button type="submit" loading={state.loading} className="h-14 w-full bg-linear-to-r from-brand-700 to-navy text-base">Send link <ArrowRight className="size-5" /></Button>
+            <Link to="/login" className="block text-center text-sm font-semibold text-slate-500 hover:text-ink">Back to sign in</Link>
+          </form>
+        )}
+      </div>
     </AuthShell>
   );
 }

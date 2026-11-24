@@ -1,27 +1,103 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
-  --font-bn: "Hind Siliguri", "Plus Jakarta Sans", sans-serif;
+  --font-sans:
+    "Noto Sans", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-bn: "Hind Siliguri", "Noto Sans", sans-serif;
+  --font-display: "Plus Jakarta Sans", "Noto Sans", sans-serif;
   --color-brand-50: #eef3fc;
   --color-brand-100: #dce6f9;
+  --color-brand-200: #bccff2;
   --color-brand-500: #2f63d6;
   --color-brand-600: #2456c7;
   --color-brand-700: #1d45a3;
-  --color-navy: #13265c;
+  --color-navy: #13285f;
   --color-ink: #0f1b3d;
+  --color-page: #f5f7fb;
 }
 
-body { @apply bg-slate-50 text-ink antialiased; }
-.bn { font-family: var(--font-bn); }
+body {
+  @apply bg-page text-ink antialiased;
+}
+.bn {
+  font-family: var(--font-bn);
+}
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+.strike {
+  text-decoration: line-through;
+  text-decoration-color: #e11d48;
+  text-decoration-thickness: 2px;
+}
 @layer components {
-  .card { @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,27,61,.04)]; }
-  .input { @apply h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10; }
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,27,61,.04)];
+  }
+  .input {
+    @apply h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10;
+  }
 }
 
+@keyframes loader {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+/* Printing: only the PrintPortal content is printed, colours kept, A4 (A5 for receipts). */
+.print-root {
+  display: none;
+}
+/* Admin view from the POS: hide every control that changes data. */
+[data-view-only] .edit-only {
+  display: none !important;
+}
 @media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none; }
-  .no-print { display: none !important; }
+  @page {
+    margin: 10mm;
+  }
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body > :not(.print-root) {
+    display: none !important;
+  }
+  .print-root {
+    display: block !important;
+  }
+  .print-root[data-size="A5"] {
+    width: 128mm;
+    margin: 0 auto;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+@keyframes progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-progress-fill {
+  width: var(--progress);
+  transform-origin: left center;
+  animation: progress-fill 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-progress-fill {
+    animation: none;
+    transform: scaleX(1);
+  }
 }

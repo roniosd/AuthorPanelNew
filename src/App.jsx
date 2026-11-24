@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
+import { useAuth, onboardingSkipped } from "@/lib/auth";
 import { useOnboarding } from "@/lib/queries";
 import Layout from "@/components/Layout";
 import { Spinner } from "@/components/ui";
@@ -20,15 +20,17 @@ const WithdrawHistory = page(() => import("@/pages/WithdrawHistory"));
 const PayMethods = page(() => import("@/pages/PayMethods"));
 const Profile = page(() => import("@/pages/Profile"));
 const Notifications = page(() => import("@/pages/Notifications"));
+const Receipt = page(() => import("@/pages/Receipt"));
+const ViewPanel = page(() => import("@/pages/ViewPanel"));
 
 // Signed-in pages; new authors are sent to the onboarding first.
 function Private({ children }) {
-  const { token } = useAuth();
+  const { token, viewOnly } = useAuth();
   const location = useLocation();
   const onboarding = useOnboarding(Boolean(token));
   if (!token) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (onboarding.isLoading) return <Spinner className="min-h-screen" />;
-  if (onboarding.data?.needed) return <Navigate to="/welcome" replace />;
+  if (onboarding.data?.needed && !viewOnly && !onboardingSkipped(token)) return <Navigate to="/welcome" replace />;
   return children;
 }
 
@@ -37,6 +39,7 @@ export default function App() {
   return (
     <Suspense fallback={<Spinner className="min-h-screen" />}>
       <Routes>
+        <Route path="/view" element={<ViewPanel />} />
         <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<SetPassword />} />
@@ -52,6 +55,7 @@ export default function App() {
           <Route path="pay-method" element={<PayMethods />} />
           <Route path="profile" element={<Profile />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="receipt/:kind/:id" element={<Receipt />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
