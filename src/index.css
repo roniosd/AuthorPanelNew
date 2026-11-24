@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-bn: "Hind Siliguri", "Plus Jakarta Sans", sans-serif;
+  --color-brand-50: #eef3fc;
+  --color-brand-100: #dce6f9;
+  --color-brand-500: #2f63d6;
+  --color-brand-600: #2456c7;
+  --color-brand-700: #1d45a3;
+  --color-navy: #13265c;
+  --color-ink: #0f1b3d;
+}
+
+body { @apply bg-slate-50 text-ink antialiased; }
+.bn { font-family: var(--font-bn); }
+@layer components {
+  .card { @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,27,61,.04)]; }
+  .input { @apply h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; box-shadow: none; }
+  .no-print { display: none !important; }
+}
