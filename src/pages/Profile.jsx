@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "@/lib/toast";
 import {
   Award,
   BookOpen,
@@ -61,17 +62,17 @@ import {
 const SITE = import.meta.env.VITE_SITE_URL || "https://nobokothon.com";
 
 const SectionHead = ({ icon: Icon, tone, title, badge, onEdit, editing }) => (
-  <div className="mb-5 flex items-center justify-between">
-    <div className="flex items-center gap-3">
+  <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
       <span
         className={cn(
-          "grid size-11 place-items-center rounded-xl text-white",
+          "grid size-10 shrink-0 place-items-center rounded-xl text-white sm:size-11",
           tone,
         )}
       >
         <Icon className="size-5" />
       </span>
-      <h2 className="text-xl font-bold">{title}</h2>
+      <h2 className="text-lg font-bold sm:text-xl">{title}</h2>
       {badge && (
         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
           {badge}
@@ -79,7 +80,7 @@ const SectionHead = ({ icon: Icon, tone, title, badge, onEdit, editing }) => (
       )}
     </div>
     {onEdit && !editing && (
-      <Button variant="outline" size="sm" onClick={onEdit}>
+      <Button variant="outline" size="sm" className="shrink-0" onClick={onEdit}>
         <Pencil className="size-3.5" /> Edit
       </Button>
     )}
@@ -97,25 +98,25 @@ const InfoTile = ({
 }) => (
   <div
     className={cn(
-      "flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-3.5",
+      "flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-3.5 py-3 sm:gap-4 sm:px-4 sm:py-3.5",
       className,
     )}
   >
-    <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500">
+    <span className="grid size-10 shrink-0 place-items-center self-start rounded-xl border border-slate-200 bg-white text-slate-500 sm:self-center">
       <Icon className="size-4" />
     </span>
     <div className="min-w-0 flex-1">
-      <p className="flex items-center gap-2 text-xs text-slate-500">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
         {label}
         {badge}
       </p>
-      <div className="truncate font-semibold">
+      <div className="text-sm font-semibold wrap-anywhere sm:text-base">
         {children || (
           <span className="font-normal text-slate-400">Not added</span>
         )}
       </div>
     </div>
-    {locked && <Lock className="size-4 text-slate-300" />}
+    {locked && <Lock className="size-4 shrink-0 text-slate-300" />}
     {action}
   </div>
 );
@@ -134,14 +135,16 @@ function ChangePassword({ open, onClose }) {
     try {
       await change.mutateAsync({ current, password });
       setDone(true);
+      toast.success("Password changed.");
     } catch (err) {
       setError(errorText(err));
+      toast.error(err);
     }
   };
   return (
     <Modal open={open} onClose={onClose} className="max-w-lg">
-      <div className="space-y-5 p-6">
-        <h2 className="text-2xl font-bold">Change password</h2>
+      <div className="space-y-5 p-5 sm:p-6">
+        <h2 className="pr-10 text-xl font-bold sm:text-2xl">Change password</h2>
         {done ? (
           <p className="rounded-xl bg-emerald-50 p-4 text-emerald-700">
             Your password was changed. Use the new one next time you sign in.
@@ -166,9 +169,9 @@ function ChangePassword({ open, onClose }) {
             />
           </>
         )}
-        <div className="flex justify-end gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
           {done ? (
-            <Button onClick={onClose}>Done</Button>
+            <Button className="col-span-2" onClick={onClose}>Done</Button>
           ) : (
             <>
               <Button variant="outline" onClick={onClose}>
@@ -235,19 +238,21 @@ export default function Profile() {
     if (data)
       setForm({ ...fromProfile(data), education: pos?.education || "" });
   };
-  const run = async (task) => {
+  const run = async (task, done = "Changes saved.") => {
     setMessage("");
     try {
       await task();
       setEditing(null);
+      toast.success(done);
     } catch (err) {
       setMessage(errorText(err));
+      toast.error(err);
     }
   };
   const savePersonal = () => {
     const found = personalErrors(form);
     setErrors(found);
-    if (Object.keys(found).length) return;
+    if (Object.keys(found).length) return toast.error("Please fix the highlighted fields.");
     run(async () => {
       await save.mutateAsync(personalPayload(form));
       await saveEducation.mutateAsync(form.education);
@@ -255,14 +260,17 @@ export default function Profile() {
   };
   const choosePhoto = (file) => {
     const problem = checkPhoto(file);
-    if (problem) return setMessage(problem);
+    if (problem) {
+      toast.error(problem);
+      return setMessage(problem);
+    }
     const body = new FormData();
     body.append("file", file);
     body.append("showPhoto", String(profile.showPhoto !== false));
-    run(() => upload.mutateAsync(body));
+    run(() => upload.mutateAsync(body), "Photo updated.");
   };
   const EditBar = ({ onSave }) => (
-    <div className="mt-5 flex justify-end gap-3">
+    <div className="mt-5 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
       <Button variant="outline" onClick={cancel}>
         Cancel
       </Button>
@@ -290,22 +298,23 @@ export default function Profile() {
           <ErrorBox error={message} />
         </div>
       )}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,460px)_1fr]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-4 sm:space-y-6">
           <Card className="overflow-hidden">
-            <div className="h-36 bg-navy bg-[radial-gradient(rgba(255,255,255,.18)_1px,transparent_1px)] bg-size-[14px_14px]" />
-            <div className="-mt-20 px-6 pb-6 text-center">
+            <div className="h-28 bg-navy sm:h-36 bg-[radial-gradient(rgba(255,255,255,.18)_1px,transparent_1px)] bg-size-[14px_14px]" />
+            <div className="-mt-16 px-4 pb-5 text-center sm:-mt-20 sm:px-6 sm:pb-6">
               <div className="relative mx-auto w-fit">
                 <Avatar
                   name={name}
                   photo={profile.photo}
-                  size="size-36"
-                  className="border-[6px] border-white text-6xl shadow-lg"
+                  size="size-28 sm:size-36"
+                  className="border-4 border-white text-5xl shadow-lg sm:border-[6px] sm:text-6xl"
                 />
                 {linked && (
                   <button
+                    type="button"
                     onClick={() => fileInput.current?.click()}
-                    className="absolute right-2 bottom-2 grid size-10 place-items-center rounded-full border-4 border-white bg-amber-400 text-white"
+                    className="absolute right-1 bottom-1 grid size-10 place-items-center rounded-full border-4 border-white bg-amber-400 text-white active:scale-95 sm:right-2 sm:bottom-2"
                     title="Change photo"
                   >
                     {upload.isPending ? "…" : <Camera className="size-4" />}
@@ -323,27 +332,27 @@ export default function Profile() {
                   }}
                 />
               </div>
-              <p className="bn mt-4 text-3xl font-bold">{name}</p>
-              <p className="text-slate-500">{profile.en_author || ""}</p>
+              <p className="bn mt-3 text-2xl font-bold wrap-break-word sm:mt-4 sm:text-3xl">{name}</p>
+              <p className="wrap-break-word text-slate-500">{profile.en_author || ""}</p>
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
                 <Pencil className="size-3.5" /> Author
               </span>
-              <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-2xl border border-slate-100 bg-slate-50/60 py-4">
+              <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-2xl border border-slate-100 bg-slate-50/60 py-3 sm:py-4">
                 {[
                   ["Books", pos?.books ?? "—"],
                   ["Editions", pos?.editions ?? "—"],
                   ["Author since", pos?.authorSince ?? "—"],
                 ].map(([label, value]) => (
-                  <div key={label}>
-                    <p className="display text-2xl font-bold text-brand-700">
+                  <div key={label} className="min-w-0 px-1">
+                    <p className="display text-xl font-bold text-brand-700 sm:text-2xl">
                       {value}
                     </p>
-                    <p className="text-sm text-slate-500">{label}</p>
+                    <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
                   </div>
                 ))}
               </div>
               {pos?.covers?.length > 0 && (
-                <div className="mt-8 flex justify-center items-center">
+                <div className="mt-6 flex items-center justify-center px-2 sm:mt-8">
                   {pos.covers.map((cover, index) => {
                     const offset = index - (pos.covers.length - 1) / 2;
                     const rotation = offset * 7;
@@ -354,8 +363,8 @@ export default function Profile() {
                         key={cover}
                         cover={cover}
                         className={cn(
-                          "h-24 w-16 shrink-0 border-4 border-white shadow-lg rounded-md transition-transform duration-300 hover:z-50 hover:scale-110",
-                          index > 0 && "-ml-4",
+                          "h-20 w-14 shrink-0 rounded-md border-[3px] border-white shadow-lg transition-transform duration-300 hover:z-1000 hover:scale-110 sm:h-24 sm:w-16 sm:border-4",
+                          index > 0 && "-ml-5 sm:-ml-4",
                         )}
                         style={{
                           transform: `rotate(${rotation}deg) translateY(${translateY}px)`,
@@ -368,9 +377,9 @@ export default function Profile() {
                 </div>
               )}
               {linked && (
-                <label className="mt-6 flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3.5 text-left font-semibold">
-                  <span className="flex items-center gap-3">
-                    <span className="grid size-9 place-items-center rounded-lg bg-slate-100">
+                <label className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 px-3.5 py-3 text-left text-sm font-semibold sm:px-4 sm:py-3.5 sm:text-base">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100">
                       <Camera className="size-4 text-slate-500" />
                     </span>{" "}
                     Show my photo on the website
@@ -385,7 +394,7 @@ export default function Profile() {
                       )
                     }
                     className={cn(
-                      "edit-only relative h-7 w-12 rounded-full transition",
+                      "edit-only relative h-7 w-12 shrink-0 rounded-full transition",
                       profile.showPhoto !== false ? "bg-navy" : "bg-slate-300",
                     )}
                   >
@@ -398,8 +407,8 @@ export default function Profile() {
                   </button>
                 </label>
               )}
-              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left">
-                <span className="grid size-9 place-items-center rounded-lg bg-slate-100">
+              <div className="mt-3 flex items-center gap-2 rounded-2xl border border-slate-200 px-3.5 py-3 text-left sm:gap-3 sm:px-4">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100">
                   <Link2 className="size-4 text-slate-500" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -409,12 +418,14 @@ export default function Profile() {
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard?.writeText(authorPage);
+                    toast.success("Link copied.");
                     setCopied(true);
                     setTimeout(() => setCopied(false), 1500);
                   }}
-                  className="grid size-9 place-items-center rounded-lg border border-slate-200"
+                  className="grid size-10 shrink-0 place-items-center rounded-lg border border-slate-200 active:bg-slate-100 sm:size-9"
                   title="Copy"
                 >
                   {copied ? "✓" : <Copy className="size-4" />}
@@ -423,7 +434,7 @@ export default function Profile() {
                   href={authorPage}
                   target="_blank"
                   rel="noreferrer"
-                  className="grid size-9 place-items-center rounded-lg border border-slate-200"
+                  className="grid size-10 shrink-0 place-items-center rounded-lg border border-slate-200 active:bg-slate-100 sm:size-9"
                   title="Open"
                 >
                   <ExternalLink className="size-4" />
@@ -432,7 +443,7 @@ export default function Profile() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <SectionHead
               icon={BookOpen}
               tone="bg-amber-500"
@@ -457,11 +468,11 @@ export default function Profile() {
                 />
               </>
             ) : (
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5">
                 <span className="display text-4xl leading-none text-amber-400">
                   “
                 </span>
-                <p className="bn -mt-3 pl-6 leading-relaxed text-slate-700">
+                <p className="bn -mt-3 pl-4 leading-relaxed wrap-break-word text-slate-700 sm:pl-6">
                   {profile.bio || "No bio yet."}
                 </p>
               </div>
@@ -469,8 +480,8 @@ export default function Profile() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="p-6">
+        <div className="min-w-0 space-y-4 sm:space-y-6">
+          <Card className="p-4 sm:p-6">
             <SectionHead
               icon={User}
               tone="bg-brand-600"
@@ -500,7 +511,7 @@ export default function Profile() {
                 <EditBar onSave={savePersonal} />
               </>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <InfoTile icon={User} label="Name (Bangla)" locked>
                   <span className="bn">{profile.bn_author || name}</span>
                 </InfoTile>
@@ -532,8 +543,9 @@ export default function Profile() {
                   action={
                     idNumber && (
                       <button
+                        type="button"
                         onClick={() => setShowId(!showId)}
-                        className="grid size-9 place-items-center rounded-lg border border-slate-200"
+                        className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white active:bg-slate-100"
                       >
                         {showId ? (
                           <EyeOff className="size-4" />
@@ -550,7 +562,7 @@ export default function Profile() {
                       : `•••• •••• ••${idNumber.slice(-4)}`
                     : ""}
                 </InfoTile>
-                <Link to="/pay-method">
+                <Link to="/pay-method" className="block min-w-0">
                   <InfoTile
                     icon={CreditCard}
                     label="Payment number"
@@ -561,15 +573,15 @@ export default function Profile() {
                         </span>
                       )
                     }
-                    action={<ChevronRight className="size-4 text-slate-400" />}
+                    action={<ChevronRight className="size-4 shrink-0 text-slate-400" />}
                   >
                     {method && (
-                      <span className="flex items-center gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
                         <MethodIcon
                           method={method}
-                          className="size-6 rounded-md border-0"
+                          className="size-6 shrink-0 rounded-md border-0"
                         />
-                        {methodTitle(method)} {methodNumber(method)}
+                        <span className="truncate">{methodTitle(method)} {methodNumber(method)}</span>
                       </span>
                     )}
                   </InfoTile>
@@ -582,14 +594,14 @@ export default function Profile() {
                       Optional
                     </span>
                   }
-                  className="md:col-span-2"
+                  className="sm:col-span-2"
                 >
                   {form.education}
                 </InfoTile>
                 <InfoTile
                   icon={MapPin}
                   label="Address"
-                  className="md:col-span-2"
+                  className="sm:col-span-2"
                 >
                   {profile.address}
                 </InfoTile>
@@ -597,7 +609,7 @@ export default function Profile() {
             )}
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <SectionHead
               icon={Link2}
               tone="bg-violet-600"
@@ -616,7 +628,7 @@ export default function Profile() {
                 />
               </>
             ) : (
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
                 {[
                   ["facebook", "Facebook"],
                   ["youtube", "YouTube"],
@@ -624,7 +636,7 @@ export default function Profile() {
                 ].map(([key, label]) => (
                   <div
                     key={key}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5"
+                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5"
                   >
                     <SocialDot type={key} />
                     <div className="min-w-0 flex-1">
@@ -646,15 +658,16 @@ export default function Profile() {
                         }
                         target="_blank"
                         rel="noreferrer"
-                        className="grid size-8 place-items-center rounded-lg border border-slate-200"
+                        className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white active:bg-slate-100 sm:size-8"
                       >
                         <ExternalLink className="size-3.5" />
                       </a>
                     ) : (
                       linked && (
                         <button
+                          type="button"
                           onClick={() => setEditing("social")}
-                          className="flex items-center gap-1 rounded-lg border border-dashed border-brand-300 px-2 py-1 text-sm font-semibold text-brand-700"
+                          className="flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-brand-300 px-2.5 py-1.5 text-sm font-semibold text-brand-700 active:bg-brand-50"
                         >
                           <Plus className="size-3.5" /> Add
                         </button>
@@ -666,32 +679,32 @@ export default function Profile() {
             )}
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <SectionHead
               icon={ShieldCheck}
               tone="bg-emerald-600"
               title="Security"
             />
-            <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-4">
-              <span className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 px-3.5 py-3.5 sm:flex-nowrap sm:gap-4 sm:px-4 sm:py-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500">
                 <Lock className="size-4" />
               </span>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs text-slate-500">Password</p>
                 <p className="font-bold tracking-widest">••••••••••</p>
               </div>
-              <Button className="edit-only" onClick={() => setPassword(true)}>
+              <Button className="edit-only w-full sm:w-auto" onClick={() => setPassword(true)}>
                 Change password
               </Button>
             </div>
             <p className="mt-5 mb-2 text-sm text-slate-500">
               Logged in devices
             </p>
-            <div className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-4 py-3.5">
-              <span className="grid size-10 place-items-center rounded-xl bg-white text-slate-500">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-3.5 py-3.5 sm:gap-4 sm:px-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-slate-500">
                 <Monitor className="size-4" />
               </span>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold">
                   {/Android|iPhone/.test(navigator.userAgent)
                     ? "Phone"
@@ -707,7 +720,7 @@ export default function Profile() {
                 </p>
                 <p className="text-sm text-slate-500">Active now</p>
               </div>
-              <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+              <span className="shrink-0 rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-emerald-700">
                 This device
               </span>
             </div>

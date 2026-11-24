@@ -4,6 +4,7 @@ import { Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { actions, useAction, usePayMethods, useSummary } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
+import { confirmDialog, toast } from "@/lib/toast";
 import { methodNumber, methodTitle, methodType } from "@/lib/format";
 import PayMethodForm, { emptyMethod, fromMethod, methodErrors, toPayload } from "@/components/PayMethodForm";
 import { Button, Card, ErrorBox, MethodIcon, PageTitle, Spinner, cn } from "@/components/ui";
@@ -11,8 +12,8 @@ import { Button, Card, ErrorBox, MethodIcon, PageTitle, Spinner, cn } from "@/co
 function MethodCard({ method, isDefault, onEdit, onDelete, onDefault }) {
   const cash = method.mode === "cash";
   return (
-    <Card className={cn("flex flex-col p-6", isDefault && "border-brand-600 ring-1 ring-brand-600")}>
-      <div className="flex items-center gap-3"><MethodIcon method={method} className="size-12" /><div><p className="text-lg font-bold">{method.mode === "bank" ? method.bankName : methodTitle(method)}</p><p className="text-sm text-slate-500">{[methodType(method), method.mode === "bank" && method.branch ? `${method.branch} branch` : ""].filter(Boolean).join(" · ")}</p></div></div>
+    <Card className={cn("flex flex-col p-4 sm:p-6", isDefault && "border-brand-600 ring-1 ring-brand-600")}>
+      <div className="flex items-center gap-3"><MethodIcon method={method} className="size-12 shrink-0" /><div className="min-w-0"><p className="text-lg font-bold">{method.mode === "bank" ? method.bankName : methodTitle(method)}</p><p className="text-sm text-slate-500">{[methodType(method), method.mode === "bank" && method.branch ? `${method.branch} branch` : ""].filter(Boolean).join(" · ")}</p></div></div>
       {cash ? (
         <>
           <p className="mt-5 rounded-xl bg-emerald-50 px-4 py-2.5 font-semibold text-emerald-700">Collect from Nobokothon office</p>
@@ -21,7 +22,7 @@ function MethodCard({ method, isDefault, onEdit, onDelete, onDefault }) {
         </>
       ) : (
         <>
-          <p className="display mt-5 text-2xl font-bold tracking-wide">{methodNumber(method)}</p>
+          <p className="display mt-5 text-xl font-bold tracking-wide break-all sm:text-2xl">{methodNumber(method)}</p>
           <p className="mt-4 text-xs text-slate-400">Account name</p>
           <p className="bn">{method.accountTitle || "—"}</p>
         </>
@@ -78,21 +79,25 @@ export default function PayMethods() {
   const submit = async () => {
     const found = methodErrors(form);
     setErrors(found);
-    if (Object.keys(found).length) return;
+    if (Object.keys(found).length) return toast.error("Please fix the highlighted fields.");
     setMessage("");
     try {
       await save.mutateAsync({ id: editing?._id, body: toPayload(form), isDefault: form.isDefault });
+      toast.success(editing ? "Pay method updated." : "Pay method added.");
       reset();
     } catch (err) {
       setMessage(errorText(err));
+      toast.error(err);
     }
   };
-  const run = (mutation, value, confirmText) => async () => {
-    if (confirmText && !window.confirm(confirmText)) return;
+  const run = (mutation, value, confirmText, done) => async () => {
+    if (confirmText && !(await confirmDialog({ title: confirmText, confirmText: "Yes, delete" }))) return;
     try {
       await mutation.mutateAsync(value);
+      if (done) toast.success(done);
     } catch (err) {
       setMessage(errorText(err));
+      toast.error(err);
     }
   };
 
@@ -110,15 +115,15 @@ export default function PayMethods() {
           ) : (
             <div className="grid gap-5 md:grid-cols-2">
               {sorted.map((method, index) => (
-                <MethodCard key={method._id} method={method} isDefault={method.isDefault || (!hasDefault && index === 0)} onEdit={() => edit(method)} onDefault={run(makeDefault, method._id)} onDelete={run(remove, method._id, (method.isDefault || (!hasDefault && index === 0)) && sorted.length > 1 ? "This is your default method. Make another one default first, or delete anyway?" : "Delete this pay method?")} />
+                <MethodCard key={method._id} method={method} isDefault={method.isDefault || (!hasDefault && index === 0)} onEdit={() => edit(method)} onDefault={run(makeDefault, method._id, null, "Default pay method updated.")} onDelete={run(remove, method._id, (method.isDefault || (!hasDefault && index === 0)) && sorted.length > 1 ? "This is your default method. Make another one default first, or delete anyway?" : "Delete this pay method?", "Pay method deleted.")} />
               ))}
             </div>
           )}
         </div>
-        <Card ref={panel} className="edit-only h-fit space-y-6 p-6">
-          <div className="flex items-center gap-3 border-b border-slate-100 pb-5"><span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">{editing ? <Pencil className="size-5" /> : <Plus className="size-5" />}</span><h2 className="text-2xl font-bold">{editing ? "Edit pay method" : "Add pay method"}</h2></div>
+        <Card ref={panel} className="edit-only h-fit scroll-mt-24 space-y-6 p-4 sm:p-6">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-5"><span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">{editing ? <Pencil className="size-5" /> : <Plus className="size-5" />}</span><h2 className="text-xl font-bold sm:text-2xl">{editing ? "Edit pay method" : "Add pay method"}</h2></div>
           <PayMethodForm form={form} setForm={setForm} errors={errors} office={summary?.office} showDefault />
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-5 sm:flex sm:justify-end">
             <Button variant="outline" size="lg" onClick={reset}>Cancel</Button>
             <Button size="lg" loading={save.isPending} onClick={submit}><Check className="size-4" /> Save pay method</Button>
           </div>

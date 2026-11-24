@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { actions, useAction, useNotifications } from "@/lib/queries";
+import { toast } from "@/lib/toast";
 import NotificationList from "@/components/NotificationList";
 import { Button, Card, Empty, ErrorBox, PageTitle, Pagination, Spinner, Tabs } from "@/components/ui";
 
@@ -13,7 +14,7 @@ export default function Notifications() {
 
   return (
     <>
-      <PageTitle title="Notifications" right={data?.unread > 0 && <Button variant="outline" loading={read.isPending} onClick={() => read.mutate()}><Check className="size-4" /> Mark all as read</Button>} />
+      <PageTitle title="Notifications" right={data?.unread > 0 && <Button variant="outline" loading={read.isPending} onClick={() => read.mutate(undefined, { onSuccess: () => toast.success("All notifications marked as read."), onError: (err) => toast.error(err) })}><Check className="size-4" /> Mark all as read</Button>} />
       <Card className="mx-auto max-w-3xl overflow-hidden pb-3">
         <div className="flex items-center justify-between border-b border-slate-100 p-4">
           <Tabs value={category} onChange={(value) => { setCategory(value); setPage(1); }} items={[{ value: "all", label: "All" }, { value: "sales", label: "Sales" }, { value: "withdraw", label: "Withdraw" }, { value: "advance", label: "Advance" }]} />

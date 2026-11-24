@@ -24,20 +24,20 @@ export const rangeOf = ({ preset, from, to }) => {
 
 export default function DateFilter({ value, onChange, presets = SALES_PRESETS }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="inline-flex flex-wrap rounded-xl bg-slate-100 p-1">
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <div className="no-scrollbar inline-flex max-w-full overflow-x-auto rounded-xl bg-slate-100 p-1 sm:flex-wrap">
         {[...presets, ["custom", "Custom"]].map(([key, label]) => (
-          <button key={key} type="button" onClick={() => onChange({ ...value, preset: key })} className={cn("flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium transition", value.preset === key ? "bg-white font-semibold text-brand-700 shadow-sm" : "text-slate-500 hover:text-ink")}>
+          <button key={key} type="button" onClick={() => onChange({ ...value, preset: key })} className={cn("flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium whitespace-nowrap transition sm:py-1.5", value.preset === key ? "bg-white font-semibold text-brand-700 shadow-sm" : "text-slate-500 hover:text-ink")}>
             {key === "custom" && <CalendarDays className="size-4" />}
             {label}
           </button>
         ))}
       </div>
       {value.preset === "custom" && (
-        <div className="flex items-center gap-2">
-          <input type="date" className="input h-10 w-40 text-sm" value={value.from || ""} onChange={(event) => onChange({ ...value, from: event.target.value })} />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <input type="date" className="input h-10 min-w-0 flex-1 px-3 text-sm sm:w-40 sm:flex-none sm:px-4" value={value.from || ""} onChange={(event) => onChange({ ...value, from: event.target.value })} />
           <span className="text-xs text-slate-400">to</span>
-          <input type="date" className="input h-10 w-40 text-sm" value={value.to || ""} onChange={(event) => onChange({ ...value, to: event.target.value })} />
+          <input type="date" className="input h-10 min-w-0 flex-1 px-3 text-sm sm:w-40 sm:flex-none sm:px-4" value={value.to || ""} onChange={(event) => onChange({ ...value, to: event.target.value })} />
         </div>
       )}
     </div>

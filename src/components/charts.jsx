@@ -54,7 +54,7 @@ export function AreaChart({ points = [], height = 260 }) {
       <path d={area} fill={`url(#${id})`} />
       <path d={line} fill="none" stroke="#2456c7" strokeWidth="2.5" />
       {coords.map(([px, py], index) => (
-        <g key={index} onMouseEnter={() => setHover(index)}>
+        <g key={index} onMouseEnter={() => setHover(index)} onClick={() => setHover(index)}>
           <rect x={px - 20} y={pad.top} width="40" height={height - pad.top - pad.bottom} fill="transparent" />
           <circle cx={px} cy={py} r={index === best || index === hover ? 4.5 : 3} fill="#fff" stroke="#2456c7" strokeWidth="2" />
           {(index === best || index === hover) && points[index].value > 0 && (

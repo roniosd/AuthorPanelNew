@@ -22,7 +22,7 @@ export default function Receipt() {
         title={title}
         back={kind === "advance" ? "/royalty-history" : "/withdraw-history"}
         right={item && (
-          <div className="flex gap-2">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             {item.proof && <a href={`${IMAGE_BASE}/payout/${item.proof}`} target="_blank" rel="noreferrer"><Button variant="outline"><Camera className="size-4" /> Payment proof</Button></a>}
             <Button variant="outline" onClick={printNow}><FileDown className="size-4" /> Download PDF</Button>
             <Button variant="outline" onClick={printNow}><Printer className="size-4" /> Print</Button>

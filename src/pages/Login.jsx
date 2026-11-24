@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import { AuthShell, StepTitle } from "@/components/AuthShell";
 import { Button, ErrorBox, Field } from "@/components/ui";
 
@@ -25,6 +26,7 @@ export default function Login() {
       navigate(location.state?.from || "/", { replace: true });
     } catch (err) {
       setError(errorText(err));
+      toast.error(err);
     } finally {
       setLoading(false);
     }

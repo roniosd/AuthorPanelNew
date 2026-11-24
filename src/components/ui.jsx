@@ -15,6 +15,20 @@ import { imageUrl } from "@/lib/imageUrl";
 
 export const cn = (...classes) => classes.filter(Boolean).join(" ");
 
+// Locks page scroll while a drawer / sheet is open (counts nested locks).
+let locks = 0;
+export function useScrollLock(active) {
+  useEffect(() => {
+    if (!active) return;
+    locks += 1;
+    document.body.classList.add("scroll-locked");
+    return () => {
+      locks -= 1;
+      if (!locks) document.body.classList.remove("scroll-locked");
+    };
+  }, [active]);
+}
+
 const VARIANTS = {
   primary:
     "bg-brand-600 text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700",
@@ -41,7 +55,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
         VARIANTS[variant],
         sizes[size],
         className,
@@ -64,9 +78,9 @@ export const Card = ({ className, children, ...props }) => (
 export function CardHead({ icon: Icon, title, sub, right, className }) {
   return (
     <div className={cn("flex items-center justify-between gap-3", className)}>
-      <div className="flex items-center gap-2.5">
-        {Icon && <Icon className="size-4 text-brand-600" />}
-        <h3 className="text-sm font-bold">{title}</h3>
+      <div className="flex min-w-0 items-center gap-2.5">
+        {Icon && <Icon className="size-4 shrink-0 text-brand-600" />}
+        <h3 className="min-w-0 text-sm font-bold">{title}</h3>
         {sub && <span className="text-xs text-slate-400">{sub}</span>}
       </div>
       {right}
@@ -164,18 +178,18 @@ export const ErrorBox = ({ error }) => (
 
 export function PageTitle({ title, back, right, sub }) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 sm:mb-6">
+      <div className="flex min-w-0 items-center gap-3">
         {back && (
           <Link
             to={back}
-            className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50"
+            className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100"
           >
             <ChevronLeft className="size-4" />
           </Link>
         )}
         <div>
-          <h1 className="display text-[28px] font-bold text-navy">{title}</h1>
+          <h1 className="display text-2xl font-bold text-navy sm:text-[28px]">{title}</h1>
           {sub && <p className="text-sm text-slate-500">{sub}</p>}
         </div>
       </div>
@@ -188,7 +202,7 @@ export function Tabs({ value, onChange, items, className }) {
   return (
     <div
       className={cn(
-        "inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1",
+        "no-scrollbar inline-flex max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1",
         className,
       )}
     >
@@ -198,7 +212,7 @@ export function Tabs({ value, onChange, items, className }) {
           type="button"
           onClick={() => onChange(item.value)}
           className={cn(
-            "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+            "shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition",
             value === item.value
               ? "bg-white text-brand-700 shadow-sm"
               : "text-slate-500 hover:text-ink",
@@ -221,28 +235,37 @@ export function Modal({ open, onClose, children, className }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+  useScrollLock(open);
   if (!open) return null;
+  // Phones: bottom sheet. sm and up: centred dialog (unchanged).
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/50 p-4 backdrop-blur-sm"
+      className="fade-in fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-ink/50 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className={cn(
-          "relative w-full max-w-md rounded-3xl bg-white shadow-2xl",
-          className,
-        )}
-        onClick={(event) => event.stopPropagation()}
-      >
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 grid size-8 place-items-center rounded-full bg-white/80 text-slate-500 hover:bg-slate-100"
-          >
-            <X className="size-4" />
-          </button>
-        )}
-        {children}
+      <div className="flex min-h-full items-end justify-center pt-10 sm:items-center sm:p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className={cn(
+            "sheet-in relative w-full max-w-md rounded-t-3xl bg-white pb-safe shadow-2xl sm:rounded-3xl sm:pb-0",
+            className,
+          )}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <span className="absolute top-2 left-1/2 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-slate-300/80 sm:hidden" />
+          {onClose && (
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 grid size-9 place-items-center rounded-full bg-white/80 text-slate-500 hover:bg-slate-100 active:bg-slate-200 sm:size-8"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -394,7 +417,7 @@ export function Pagination({ page, total, limit, onChange }) {
   const pages = Math.max(1, Math.ceil(total / limit));
   if (pages <= 1) return null;
   return (
-    <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+    <div className="flex flex-col items-center justify-between gap-2 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 sm:flex-row sm:px-5">
       <span>
         Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of{" "}
         {total}

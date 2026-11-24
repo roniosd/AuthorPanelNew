@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "@/lib/toast";
 import { Link } from "react-router-dom";
 import { BookOpen, ChevronRight, Hourglass, Search, Share2 } from "lucide-react";
 import { useBooks } from "@/lib/queries";
@@ -12,7 +13,7 @@ export const shareBook = (book, edition) => {
   const url = import.meta.env.VITE_SITE_URL || "https://nobokothon.com";
   const text = `${bookName(book)}${edition ? ` — ${ordinal(edition)} edition` : ""}`;
   if (navigator.share) navigator.share({ title: text, text, url }).catch(() => {});
-  else navigator.clipboard?.writeText(`${text} ${url}`);
+  else navigator.clipboard?.writeText(`${text} ${url}`).then(() => toast.success("Link copied."), () => toast.error("Could not copy the link."));
 };
 
 // My Books (design 02): blurred-cover banner, edition ribbon, MRP · Royalty, Sold / Left / Earned.
@@ -26,14 +27,14 @@ export default function Books() {
 
   return (
     <>
-      <PageTitle title="My Books" right={<div className="relative w-full max-w-sm sm:w-96"><Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" /><input value={q} onChange={(event) => setQ(event.target.value)} className="input pl-11" placeholder="Search books" /></div>} />
+      <PageTitle title="My Books" right={<div className="relative w-full max-w-sm sm:w-96"><Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" /><input value={q} onChange={(event) => setQ(event.target.value)} type="search" className="input pl-11" placeholder="Search books" /></div>} />
       {!list.length ? <Card><Empty icon={BookOpen} title="No books found" /></Card> : (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
           {list.map((book) => {
             const latest = book.latest;
             const cover = bookCover(book.cover);
             return (
-              <div key={book._id} className="card group relative overflow-hidden transition hover:-translate-y-0.5 hover:shadow-xl">
+              <div key={book._id} className="card group relative overflow-hidden transition hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.99]">
                 <Link to={`/books/${book._id}`} className="block">
                   <div className="relative h-36 overflow-hidden bg-linear-to-br from-slate-300 to-slate-500">
                     {cover && <img src={cover} alt="" className="absolute inset-0 size-full scale-150 object-cover opacity-80 blur-2xl" />}
@@ -63,7 +64,7 @@ export default function Books() {
                     <span className="flex items-center gap-1 font-semibold text-brand-700">View details <ChevronRight className="size-4" /></span>
                   </div>
                 </Link>
-                {latest && <button onClick={() => shareBook(book, latest.edition)} className="absolute top-3 right-3 grid size-9 place-items-center rounded-lg bg-white/80 text-slate-600 shadow-sm backdrop-blur hover:bg-white" title="Share"><Share2 className="size-4" /></button>}
+                {latest && <button onClick={() => shareBook(book, latest.edition)} type="button" aria-label="Share" className="absolute top-3 right-3 grid size-10 place-items-center rounded-lg bg-white/80 text-slate-600 shadow-sm backdrop-blur hover:bg-white active:bg-white sm:size-9" title="Share"><Share2 className="size-4" /></button>}
               </div>
             );
           })}

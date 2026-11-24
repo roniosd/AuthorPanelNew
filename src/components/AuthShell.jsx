@@ -21,7 +21,7 @@ export function AuthShell({ children, name, footer }) {
           </div>
         </div>
       </aside>
-      <main className="flex min-h-screen flex-col px-6 py-10 md:px-14 lg:py-14">
+      <main className="flex min-h-screen flex-col px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10 md:px-14 lg:py-14">
         <img src="/logo.png" alt="নবকথন" className="mb-8 h-9 w-fit lg:hidden" />
         <div className="w-full max-w-3xl flex-1">{children}</div>
         {footer && <div className="mt-10 w-full max-w-3xl">{footer}</div>}
@@ -32,11 +32,11 @@ export function AuthShell({ children, name, footer }) {
 
 export function Stepper({ step }) {
   return (
-    <div className="mb-12 grid grid-cols-6 gap-3">
+    <div className="mb-8 grid grid-cols-6 gap-1.5 sm:mb-12 sm:gap-3">
       {STEPS.map((label, index) => (
         <div key={label} className="space-y-3">
           <div className={cn("h-1.5 rounded-full", index < step ? "bg-emerald-500" : index === step ? "bg-brand-700" : "bg-slate-200")} />
-          <p className={cn("flex items-center gap-1 truncate text-sm font-medium", index < step ? "text-emerald-600" : index === step ? "font-semibold text-brand-700" : "text-slate-400")}>
+          <p className={cn("flex items-center gap-1 truncate text-sm font-medium", index !== step && "max-sm:hidden", index < step ? "text-emerald-600" : index === step ? "font-semibold text-brand-700" : "text-slate-400")}>
             {index < step && <Check className="size-3.5" />}
             {label}
           </p>
@@ -48,19 +48,19 @@ export function Stepper({ step }) {
 
 export const StepTitle = ({ title, sub, badge }) => (
   <div className="mb-8">
-    <h1 className="display flex items-center gap-3 text-[38px] font-bold text-navy">{title}{badge && <span className="rounded-full bg-slate-100 px-3 py-1 font-sans text-sm font-semibold text-slate-500">{badge}</span>}</h1>
-    {sub && <p className="mt-2 text-[17px] text-slate-500">{sub}</p>}
+    <h1 className="display flex flex-wrap items-center gap-3 text-3xl font-bold text-navy sm:text-[38px]">{title}{badge && <span className="rounded-full bg-slate-100 px-3 py-1 font-sans text-sm font-semibold text-slate-500">{badge}</span>}</h1>
+    {sub && <p className="mt-2 text-base text-slate-500 sm:text-[17px]">{sub}</p>}
   </div>
 );
 
 // Bottom bar: Back (outlined) on the left, "Save and continue" on the right.
 export function StepFooter({ onBack, onNext, loading, disabled, nextLabel = "Save and continue", extra }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      {onBack ? <Button variant="outline" size="lg" className="h-14 px-7 text-base" onClick={onBack}><ChevronLeft className="size-5" /> Back</Button> : <span />}
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between gap-2 sm:gap-3">
+      {onBack ? <Button variant="outline" size="lg" className="h-14 shrink-0 px-4 text-base sm:px-7" onClick={onBack}><ChevronLeft className="size-5" /> Back</Button> : <span />}
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {extra}
-        <Button size="lg" loading={loading} disabled={disabled} onClick={onNext} className="h-14 bg-linear-to-r from-brand-700 to-navy px-8 text-base shadow-xl shadow-navy/25 hover:from-navy hover:to-navy">{nextLabel} <ArrowRight className="size-5" /></Button>
+        <Button size="lg" loading={loading} disabled={disabled} onClick={onNext} className="h-14 bg-linear-to-r from-brand-700 to-navy px-5 text-base sm:px-8 shadow-xl shadow-navy/25 hover:from-navy hover:to-navy">{nextLabel} <ArrowRight className="size-5" /></Button>
       </div>
     </div>
   );

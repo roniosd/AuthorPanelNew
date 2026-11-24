@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Ban, BookOpen, Calendar, CalendarDays, Coins, Eye, FileText, Info, Link2, MessageSquare, Percent, Share2, Sparkles, Tag, Undo2, Wallet, XCircle, Copy } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/lib/toast";
 import { actions, useAdvance, useBook, usePayout } from "@/lib/queries";
 import { bookName, dateShort, dateTimeShort, fmtDate, ordinal, taka } from "@/lib/format";
 import { Button, Cover, MethodIcon, Modal, cn } from "@/components/ui";
@@ -115,26 +116,26 @@ function MilestonePopup({ item, onClose }) {
     const url = import.meta.env.VITE_SITE_URL || "https://nobokothon.com";
     const text = `${bookName(item)} — ${item.reached}+ copies sold!`;
     if (navigator.share) navigator.share({ title: text, text, url }).catch(() => {});
-    else navigator.clipboard?.writeText(`${text} ${url}`);
+    else navigator.clipboard?.writeText(`${text} ${url}`).then(() => toast.success("Link copied."), () => toast.error("Could not copy the link."));
     onClose();
   };
   return (
-    <Modal open onClose={onClose} className="max-w-md overflow-hidden">
-      <div className="relative bg-[radial-gradient(circle_at_center,#2f63d6,#13265c)] px-6 pt-10 pb-8 text-center text-white">
-        <div className="absolute inset-0 bg-[repeating-conic-gradient(from_0deg,rgba(255,255,255,.07)_0_10deg,transparent_10deg_20deg)]" />
+    <Modal open onClose={onClose} className="max-w-md overflow-hidden max-sm:mx-4 max-sm:self-center max-sm:rounded-3xl max-sm:pb-0 max-sm:[&>span:first-child]:hidden">
+      <div className="relative bg-[radial-gradient(circle_at_50%_40%,#3b6fe0,#13265c_75%)] px-6 pt-9 pb-7 text-center text-white">
+        <div className="absolute inset-0 bg-[repeating-conic-gradient(from_0deg_at_50%_40%,rgba(255,255,255,.09)_0_9deg,transparent_9deg_18deg)]" />
         <Burst />
         <div className="relative mx-auto w-fit">
-          <Cover cover={item.cover} className="h-44 w-32 -rotate-6 border-4 border-white" />
+          <Cover cover={item.cover} className="h-44 w-32 rotate-6 border-4 border-white shadow-2xl" />
           <span className="bn absolute -right-7 -bottom-3 grid size-20 place-items-center rounded-full border-4 border-amber-200 bg-amber-400 text-xl font-black text-navy shadow-lg">{bn(item.reached)}<span className="-mt-3 text-[10px]">কপি</span></span>
         </div>
         <p className="bn relative mt-6 text-amber-300">অভিনন্দন!</p>
-        <p className="bn relative text-2xl font-bold">{bookName(item)} পেরোল {bn(item.reached)} কপি</p>
+        <p className="bn relative text-2xl font-bold">{bookName(item)} পেরোল <span className="text-amber-300">{bn(item.reached)} কপি</span></p>
       </div>
       <div className="space-y-4 p-5">
-        <div className="grid grid-cols-3 gap-2">
-          {[[Calendar, "Reached on", fmtDate(new Date())], [BookOpen, "Copies sold", item.copies], [Coins, "Royalty from this book", taka(item.royalty)]].map(([Icon, label, value]) => <div key={label} className="rounded-xl border border-slate-200 p-3"><Icon className="size-4 text-brand-600" /><p className="mt-1 text-[10px] text-slate-400">{label}</p><p className="text-sm font-bold">{value}</p></div>)}
+        <div className="grid grid-cols-2 gap-2">
+          {[[Calendar, "Reached on", fmtDate(new Date())], [BookOpen, "Copies sold", item.copies], [Coins, "Royalty from this book", taka(item.royalty)]].map(([Icon, label, value]) => <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 last:col-span-2 last:flex last:items-center last:gap-2 [&:last-child>p:first-of-type]:mt-0 [&:last-child>p:last-child]:ml-auto"><Icon className="size-4 text-brand-600" /><p className="mt-1 text-xs text-slate-500">{label}</p><p className="text-base font-bold">{value}</p></div>)}
         </div>
-        <div className="flex gap-3"><Button variant="outline" className="flex-1" onClick={onClose}>Close</Button><Button className="flex-1 bg-amber-400 text-navy shadow-amber-400/30 hover:bg-amber-500" onClick={share}><Share2 className="size-4" /> Share with readers</Button></div>
+        <div className="flex gap-3"><Button variant="outline" className="h-12 flex-1" onClick={onClose}>Close</Button><Button className="h-12 flex-1 bg-linear-to-r from-amber-300 to-amber-400 text-navy shadow-amber-400/30 hover:from-amber-400 hover:to-amber-500" onClick={share}><Share2 className="size-4" /> Share with readers</Button></div>
       </div>
     </Modal>
   );

@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { ArrowRight, Check, CheckCircle2, Info, Lock } from "lucide-react";
 import { useAuth, skipOnboarding } from "@/lib/auth";
 import { errorText } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import { actions, useAction, useOnboarding, usePayMethods, usePosProfile, useProfile, useSummary } from "@/lib/queries";
 import { authorName, fmtDate, methodSub, methodTitle } from "@/lib/format";
 import { AuthShell, StepFooter, StepTitle, Stepper } from "@/components/AuthShell";
@@ -75,8 +76,10 @@ export default function Onboarding() {
     try {
       await task();
       go(next);
+      if (next < 7) toast.success("Saved.");
     } catch (err) {
       setError(errorText(err));
+      toast.error(err);
     } finally {
       setSaving(false);
     }
@@ -84,7 +87,10 @@ export default function Onboarding() {
 
   const choosePhoto = (file) => {
     const message = checkPhoto(file);
-    if (message) return setPhoto((state) => ({ ...state, error: message }));
+    if (message) {
+      toast.error(message);
+      return setPhoto((state) => ({ ...state, error: message }));
+    }
     setPhoto({ preview: URL.createObjectURL(file), file, error: "", uploading: false, uploaded: false });
   };
 
@@ -103,12 +109,18 @@ export default function Onboarding() {
     2: () => {
       if (!linked) return go(3);
       const found = personalErrors(form);
-      if (Object.keys(found).length) return setErrors(found);
+      if (Object.keys(found).length) {
+        toast.error("Please fix the highlighted fields.");
+        return setErrors(found);
+      }
       run(() => actions.saveProfile(personalPayload(form)), 3);
     },
     3: () => {
       const found = methodErrors(method);
-      if (Object.keys(found).length) return setErrors(found);
+      if (Object.keys(found).length) {
+        toast.error("Please fix the highlighted fields.");
+        return setErrors(found);
+      }
       run(async () => {
         const body = toPayload(method);
         const result = methodId ? await actions.editMethod({ id: methodId, ...body }) : await actions.addMethod(body);

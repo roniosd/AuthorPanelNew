@@ -90,39 +90,46 @@ function MoneyCard({ label, value, icon: Icon, tone }) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-2xl border bg-linear-to-br to-white p-4",
+        "flex items-center justify-between gap-2 rounded-2xl border bg-linear-to-br to-white p-4",
         tones[tone],
       )}
     >
-      <div>
-        <p className="text-xs font-semibold">{label}</p>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold">{label}</p>
         <p className="mt-1 text-2xl font-extrabold text-ink">{taka(value)}</p>
       </div>
-      <span className="chip grid size-11 place-items-center rounded-xl text-white shadow-md">
+      <span className="chip grid size-11 shrink-0 place-items-center rounded-xl text-white shadow-md">
         <Icon className="size-5" />
       </span>
     </div>
   );
 }
 
-function AvailableCard({ value }) {
+function AvailableCard({ value, name }) {
   const [show, setShow] = useState(false);
   return (
-    <div className="rounded-2xl bg-linear-to-br from-brand-600 to-navy p-4 text-white shadow-lg shadow-brand-600/25">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-white/80">Available balance</p>
+    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-brand-500 via-brand-600 to-navy p-4 text-white shadow-lg shadow-brand-600/25 max-sm:-order-1 max-sm:aspect-[1.6] max-sm:rounded-3xl max-sm:p-5">
+      <span className="pointer-events-none absolute -right-16 -bottom-20 size-56 rounded-full bg-white/5 sm:hidden" />
+      <div className="flex items-center justify-between sm:hidden">
+        <img src="/logo.png" alt="নবকথন" className="h-7 w-auto brightness-0 invert" />
+        <span className="text-xs font-semibold text-white/70">Royalty Wallet</span>
+      </div>
+      <span className="absolute top-1/2 right-5 h-10 w-13 -translate-y-1/2 rounded-lg border border-amber-500/40 bg-[linear-gradient(90deg,transparent_45%,rgba(146,64,14,.35)_45%_55%,transparent_55%),linear-gradient(135deg,#fde68a,#f59e0b)] sm:hidden" />
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-xs font-semibold text-white/80">Available balance</p>
         <Link
           to="/withdraw"
-          className="edit-only flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-brand-700"
+          className="edit-only flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-brand-700 active:bg-white/90 max-sm:absolute max-sm:right-5 max-sm:bottom-5 max-sm:rounded-xl max-sm:px-4 max-sm:py-2.5 max-sm:text-sm"
         >
           <ArrowUp className="size-3" /> Withdraw
         </Link>
       </div>
       <button
+        type="button"
         onClick={() => setShow(!show)}
-        className="mt-1 flex items-center gap-2 text-left"
+        className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-left"
       >
-        <span className="text-2xl font-extrabold">
+        <span className="text-2xl font-extrabold max-sm:text-3xl">
           {show ? taka(value) : "৳ ••••"}
         </span>
         <span className="flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px]">
@@ -137,6 +144,10 @@ function AvailableCard({ value }) {
           )}
         </span>
       </button>
+      <div className="sm:hidden">
+        <p className="text-[10px] text-white/60">Card holder</p>
+        <p className="bn truncate pr-32 text-sm font-semibold">{name}</p>
+      </div>
     </div>
   );
 }
@@ -146,10 +157,10 @@ function Recovery({ finance, since }) {
   if (!r || r.state === "none") return null;
   const done = r.state === "covered";
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-amber-50 text-amber-600">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600">
             <Hourglass className="size-4" />
           </span>
           <p className="text-base font-bold">Advance Recovery</p>
@@ -164,13 +175,15 @@ function Recovery({ finance, since }) {
             </Badge>
           )}
         </div>
-        <Ring
-          percent={r.percent}
-          size={52}
-          stroke={5}
-          color={done ? "#16a34a" : "#f59e0b"}
-          track={done ? "#dcfce7" : "#fde7c4"}
-        />
+        <div className="shrink-0">
+          <Ring
+            percent={r.percent}
+            size={52}
+            stroke={5}
+            color={done ? "#16a34a" : "#f59e0b"}
+            track={done ? "#dcfce7" : "#fde7c4"}
+          />
+        </div>
       </div>
       <div className="relative pt-7">
         <span
@@ -187,7 +200,7 @@ function Recovery({ finance, since }) {
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
           <span className="flex items-center gap-1.5">
             <i className="size-2 rounded-full bg-emerald-500" /> Recovered{" "}
             <b>{taka(r.covered)}</b>
@@ -197,7 +210,7 @@ function Recovery({ finance, since }) {
             <b>{taka(finance.advanceRemaining)}</b>
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Badge>Advance {taka(finance.advance)}</Badge>
           <Badge>
             Adjustment {taka(finance.deductAdjustment - finance.addAdjustment)}
@@ -212,7 +225,7 @@ function Recovery({ finance, since }) {
 function RecentSales({ rows, total }) {
   // Returned orders show greyed out with "Order cancelled" and struck quantity / royalty.
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <CardHead
         icon={ReceiptText}
         title={`Recent Sales (${total.count})`}
@@ -239,7 +252,7 @@ function RecentSales({ rows, total }) {
           <div
             key={`${row.status}-${row._id}`}
             className={cn(
-              "flex items-center gap-4 rounded-2xl border border-slate-100 p-3 shadow-sm",
+              "flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 p-3 shadow-sm sm:flex-nowrap sm:gap-4",
               row.status === "cancelled" && "bg-slate-50/80",
             )}
           >
@@ -271,7 +284,7 @@ function RecentSales({ rows, total }) {
                 <XCircle className="size-3.5" /> Order cancelled
               </span>
             )}
-            <div className="space-y-1 text-right text-sm">
+            <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-xs sm:block sm:w-auto sm:space-y-1 sm:border-0 sm:pt-0 sm:text-right sm:text-sm">
               <p
                 className={cn(
                   "text-slate-500",
@@ -353,7 +366,7 @@ function BookStatus({ books }) {
   const share = (book) =>
     total ? Math.round((Number(book.royalty || 0) / total) * 100) : 0;
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <CardHead icon={BookOpen} title="Book Royalty Status" />
       {!books.length ? (
         <Empty icon={BookOpen} title="No books yet" />
@@ -393,7 +406,7 @@ function BookStatus({ books }) {
                 onMouseEnter={() => setActive(index)}
                 onMouseLeave={() => setActive(-1)}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl p-2 transition",
+                  "flex items-center gap-3 rounded-xl p-2 transition active:bg-slate-50",
                   active === index ? "bg-slate-50" : "hover:bg-slate-50",
                 )}
               >
@@ -482,7 +495,7 @@ function RoyaltyChart({ data }) {
     { value: 0, label: "" },
   );
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <CardHead
         icon={TrendingUp}
         title="Royalty earned"
@@ -498,7 +511,7 @@ function RoyaltyChart({ data }) {
           />
         }
       />
-      <div className="mt-4 flex gap-8">
+      <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
         <div>
           <p className="text-[11px] text-slate-400">{current.label}</p>
           <p className="text-xl font-extrabold">{taka(total)}</p>
@@ -525,7 +538,7 @@ function Received({ data }) {
   const onOpen = (row) => navigate(`/receipt/${row.type}/${row._id}`);
   const method = data.paymentMethods[0];
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <CardHead
         icon={Check}
         title="Received"
@@ -541,7 +554,7 @@ function Received({ data }) {
       {method ? (
         <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-100 p-3">
           <MethodIcon method={method} />
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{methodTitle(method)}</p>
             <p className="text-[11px] text-slate-500">{methodSub(method)}</p>
           </div>
@@ -570,7 +583,7 @@ function Received({ data }) {
           <button
             key={row._id}
             onClick={() => onOpen(row)}
-            className="flex w-full items-center gap-3 py-2.5 text-left"
+            className="flex w-full items-center gap-3 py-3 text-left active:bg-slate-50 sm:py-2.5"
           >
             <span
               className={cn(
@@ -582,7 +595,7 @@ function Received({ data }) {
             >
               <Wallet className="size-4" />
             </span>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{taka(row.amount)}</p>
               <p className="text-[11px] text-slate-400">
                 {fmtDate(row.date)}
@@ -605,7 +618,7 @@ function Received({ data }) {
 
 function Updates({ rows }) {
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <CardHead
         icon={Bell}
         title="Updates"
@@ -663,20 +676,19 @@ export default function Dashboard() {
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBox error={error.message} />;
   const f = data.finance;
-  console.log(f);
 
   return (
-    <div className="space-y-5">
-      <h1 className="bn text-[28px] font-bold text-navy">
+    <div className="flex flex-col gap-4 sm:block sm:space-y-5">
+      <h1 className="bn text-2xl font-bold text-navy max-sm:-order-2 sm:text-[28px]">
         {greeting()}, {authorName(data.author)}
       </h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {PERIODS.map(({ key, label, icon: Icon, color, bg }) => (
           <div
             key={key}
             className={cn(
-              "flex items-end justify-between rounded-2xl border border-slate-200/80 bg-linear-to-br to-white p-4",
+              "flex items-end justify-between gap-2 rounded-2xl border border-slate-200/80 bg-linear-to-br to-white p-3 sm:p-4",
               bg,
             )}
           >
@@ -684,19 +696,19 @@ export default function Dashboard() {
               <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                 <Icon className="size-3.5" style={{ color }} /> {label}
               </p>
-              <p className="mt-1.5 text-2xl font-extrabold">
+              <p className="mt-1.5 text-xl font-extrabold sm:text-2xl">
                 {taka(data.sales[key].royalty)}
               </p>
               <p className="text-[11px] text-slate-500">
                 {num(data.sales[key].copies)} copies sold
               </p>
             </div>
-            <SparkBars values={data.sales[key].series} color={color} />
+            <SparkBars values={data.sales[key].series} color={color} className="h-8 w-12 shrink-0 sm:w-24" />
           </div>
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 max-sm:contents sm:grid-cols-2 xl:grid-cols-4">
         <MoneyCard
           label="Advance remaining"
           value={f.advanceRemaining}
@@ -709,7 +721,7 @@ export default function Dashboard() {
           icon={TrendingUp}
           tone="blue"
         />
-        <AvailableCard value={f.available} />
+        <AvailableCard value={f.available} name={authorName(data.author)} />
         <MoneyCard
           label="Received"
           value={f.received}
@@ -720,14 +732,14 @@ export default function Dashboard() {
 
       <Recovery finance={f} since={data.latestAdvance?.date} />
 
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[1.5fr_1fr]">
         <RecentSales rows={data.recentSales} total={data.sales.total} />
         <BookStatus books={data.books} />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[1.5fr_1fr]">
         <RoyaltyChart data={data} />
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           <Received data={data} />
           <Updates rows={data.updates} />
         </div>

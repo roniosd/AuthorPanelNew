@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import { AuthShell, StepFooter, StepTitle, Stepper } from "@/components/AuthShell";
 import PasswordFields, { passwordChecks } from "@/components/PasswordFields";
 import { ErrorBox } from "@/components/ui";
@@ -25,6 +26,7 @@ export default function SetPassword() {
     try {
       const result = await resetPassword(token, password);
       logout();
+      toast.success("Password set.");
       const email = result?.data?.email;
       if (email) {
         await login(email, password);
@@ -32,6 +34,7 @@ export default function SetPassword() {
       } else navigate("/login", { replace: true });
     } catch (err) {
       setError(errorText(err));
+      toast.error(err);
     } finally {
       setLoading(false);
     }

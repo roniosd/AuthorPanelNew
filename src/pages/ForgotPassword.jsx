@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Mail, MailCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorText } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import { AuthShell, StepTitle } from "@/components/AuthShell";
 import { Button, ErrorBox, Field } from "@/components/ui";
 
@@ -17,8 +18,10 @@ export default function ForgotPassword() {
     try {
       await forgotPassword(email.trim());
       setState({ loading: false, sent: true, error: "" });
+      toast.success("Password reset link sent. Check your email.");
     } catch (err) {
       setState({ loading: false, sent: false, error: errorText(err) });
+      toast.error(err);
     }
   };
 

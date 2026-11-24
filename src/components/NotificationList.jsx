@@ -41,7 +41,7 @@ export default function NotificationList({ rows = [], onOpen, compact }) {
         {list.map((row) => {
           const [Icon, tone] = KIND[row.kind] || KIND.note;
           return (
-            <button key={row._id} onClick={() => open(row)} className={cn("flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50", !row.isRead && "border border-brand-100 bg-brand-50/50")}>
+            <button type="button" key={row._id} onClick={() => open(row)} className={cn("flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 active:bg-slate-100", !row.isRead && "border border-brand-100 bg-brand-50/50")}>
               <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", tone)}><Icon className="size-4" /></span>
               <div className="min-w-0 flex-1">
                 <p className="bn text-[15px] leading-snug font-semibold">{row.title}</p>

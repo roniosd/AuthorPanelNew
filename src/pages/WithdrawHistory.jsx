@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowUp, Ban, Check, Eye, Hourglass, Lock, Search, Wallet, X, XCircle } from "lucide-react";
 import { actions, useAction, usePayouts, useSummary } from "@/lib/queries";
 import { errorText } from "@/lib/api";
+import { confirmDialog, toast } from "@/lib/toast";
 import { dateShort, methodTitle, taka, timeOnly } from "@/lib/format";
 import DateFilter, { WITHDRAW_PRESETS, rangeOf } from "@/components/DateFilter";
 import { Button, Card, Empty, ErrorBox, MethodIcon, PageTitle, Spinner, cn } from "@/components/ui";
@@ -42,11 +43,13 @@ export default function WithdrawHistory() {
   const canWithdraw = finance && finance.available >= min;
 
   const cancelRequest = async (row) => {
-    if (!window.confirm(`Cancel ${row.code}? The money goes back to your balance.`)) return;
+    if (!(await confirmDialog({ title: `Cancel ${row.code}?`, text: "The money goes back to your balance.", confirmText: "Cancel request", cancelText: "Keep it" }))) return;
     try {
       await cancel.mutateAsync(row._id);
+      toast.success(`${row.code} cancelled. The money is back in your balance.`);
     } catch (err) {
       setMessage(errorText(err));
+      toast.error(err);
     }
   };
 
@@ -55,30 +58,67 @@ export default function WithdrawHistory() {
       <PageTitle
         title="Withdraw History"
         right={
-          <div className="flex gap-2">
-            <div className="relative"><Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" /><input value={q} onChange={(event) => setQ(event.target.value)} className="input w-72 pl-11" placeholder="Search by Withdraw ID" /></div>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <div className="relative min-w-0 flex-1"><Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" /><input type="search" value={q} onChange={(event) => setQ(event.target.value)} className="input w-full pl-11 sm:w-72" placeholder="Search by Withdraw ID" /></div>
             <Link to="/withdraw" className="edit-only"><Button size="lg" className={cn(!canWithdraw && "bg-slate-200 text-slate-500 shadow-none hover:bg-slate-200")}>{canWithdraw ? <ArrowUp className="size-4" /> : <Lock className="size-4" />} Withdraw</Button></Link>
           </div>
         }
       />
       {message && <div className="mb-4"><ErrorBox error={message} /></div>}
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         <Stat icon={Wallet} tone="bg-emerald-50 text-emerald-600" label="Total withdrawn" value={<span className="text-emerald-700">{taka(data?.summary.paid)}</span>} sub={`${count("paid")} paid`} />
         <Stat icon={Hourglass} tone="bg-brand-50 text-brand-600" label="In progress" value={taka(data?.summary.requested)} sub={count("due") ? `${count("due")} open request` : "No open request"} />
         <Stat icon={XCircle} tone="bg-rose-50 text-rose-500" label="Cancelled" value={cancelled.length} sub={`${cancelled.length - byYou} by Nobokothon · ${byYou} by you`} />
         <Stat icon={Wallet} tone="bg-amber-50 text-amber-600" className="border-amber-200" label="Available balance" value={<span className={finance?.available < 0 ? "text-orange-600" : "text-ink"}>{taka(finance?.available)}</span>} sub={canWithdraw ? "Ready to withdraw" : `Need ${taka(Math.max(min - (finance?.available || 0), 0))} more to withdraw`} />
       </div>
       <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 p-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="no-scrollbar -mx-3 flex max-w-[calc(100%+1.5rem)] gap-2 overflow-x-auto px-3 sm:mx-0 sm:max-w-full sm:flex-wrap sm:px-0">
           {[["all", "All", all.length], ["due", "In progress", count("due")], ["paid", "Paid", count("paid")], ["cancel", "Cancelled", count("cancel")]].map(([key, label, n]) => (
-            <button key={key} onClick={() => setStatus(key)} className={cn("flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-sm font-semibold", status === key ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600")}>{label} <span className={cn("rounded-full px-1.5 text-xs", status === key ? "bg-white/20" : "bg-slate-100")}>{n}</span></button>
+            <button key={key} onClick={() => setStatus(key)} className={cn("flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold whitespace-nowrap sm:py-1.5", status === key ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600")}>{label} <span className={cn("rounded-full px-1.5 text-xs", status === key ? "bg-white/20" : "bg-slate-100")}>{n}</span></button>
           ))}
         </div>
         <DateFilter value={filter} onChange={setFilter} presets={WITHDRAW_PRESETS} />
       </Card>
       <Card className="overflow-hidden">
         {isLoading ? <Spinner /> : error ? <div className="p-4"><ErrorBox error={error.message} /></div> : !rows.length ? <Empty icon={Wallet} title="No withdraws yet" text="Your withdraw requests will show here." /> : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Phones / tablets: one card per withdraw. */}
+          <div className="divide-y divide-slate-100 xl:hidden">
+            {rows.map((row) => {
+              const meta = row.status === "cancel" && row.cancelledBy === "author" ? STATUS.mine : STATUS[row.status];
+              const muted = row.status === "cancel";
+              return (
+                <div key={row._id} className={cn("space-y-3 border-l-4 px-4 py-4", meta.border)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={cn("font-bold", muted && "text-slate-500")}>{row.code}</p>
+                      <p className="text-xs text-slate-400">{dateShort(row.requestedAt)} · {timeOnly(row.requestedAt)}</p>
+                    </div>
+                    <p className={cn("shrink-0 text-lg font-extrabold", row.status === "paid" ? "text-emerald-600" : muted ? "text-slate-400" : "text-brand-700")}>{taka(row.amount)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5"><MethodIcon method={row.method} className="size-8 rounded-lg" /><div className="min-w-0"><p className="truncate text-sm font-semibold">{methodTitle(row.method)}</p><p className="truncate text-xs text-slate-400">{row.sentTo?.split(" · ")[1] || ""}</p></div></div>
+                    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", meta.tone)}><meta.icon className="size-3.5" />{meta.label}</span>
+                  </div>
+                  {row.status === "cancel" && row.cancelReason && <p className="text-sm text-rose-600">{row.cancelReason}</p>}
+                  {row.status === "due" && <p className="text-sm font-semibold text-amber-700">Waiting for Nobokothon</p>}
+                  {(row.paidAt || row.cancelledAt || (row.status === "paid" && row.reference)) && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                      {row.paidAt || row.cancelledAt ? <span>Paid / Cancelled: <b className="text-ink">{dateShort(row.paidAt || row.cancelledAt)}</b> {timeOnly(row.paidAt || row.cancelledAt)}</span> : <span />}
+                      {row.status === "paid" && row.reference && <span className="rounded-md bg-slate-100 px-2 py-1 font-mono font-semibold text-ink">{row.reference}</span>}
+                    </div>
+                  )}
+                  {row.status === "due" ? (
+                    <Button variant="outline" className="edit-only w-full text-rose-600" loading={cancel.isPending} onClick={() => cancelRequest(row)}><X className="size-4" /> Cancel request</Button>
+                  ) : (
+                    <Button variant="outline" className={cn("w-full", row.status === "paid" && "border-emerald-200 bg-emerald-50 text-emerald-700")} onClick={() => navigate(`/receipt/withdraw/${row._id}`)}><Eye className="size-4" /> {row.status === "paid" ? "Receipt" : "Details"}</Button>
+                  )}
+                </div>
+              );
+            })}
+            <p className="px-5 py-4 text-sm text-slate-400">Showing 1–{rows.length} of {rows.length}</p>
+          </div>
+          <div className="hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[1000px] text-[15px]">
               <thead className="text-left text-sm text-slate-500"><tr>{["SL", "Withdraw ID", "Requested", "Amount", "Sent to", "Status", "Paid / Cancelled", "Transaction ID", "Action"].map((head) => <th key={head} className={cn("px-4 py-4 font-semibold", head === "Amount" && "text-right", head === "Action" && "text-center")}>{head}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">
@@ -113,6 +153,7 @@ export default function WithdrawHistory() {
             </table>
             <p className="px-5 py-4 text-sm text-slate-400">Showing 1–{rows.length} of {rows.length}</p>
           </div>
+          </>
         )}
       </Card>
     </>

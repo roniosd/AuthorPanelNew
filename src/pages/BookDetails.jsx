@@ -8,9 +8,9 @@ import { Badge, Card, Cover, Empty, ErrorBox, Pagination, Spinner, Tabs, cn, Est
 import { BOOK_STATUS, shareBook } from "@/pages/Books";
 
 const Stat = ({ label, value, green }) => (
-  <div className="min-w-36 rounded-2xl bg-white/95 px-4 py-3 text-left shadow-sm">
-    <p className="text-xs text-slate-500">{label}</p>
-    <p className={cn("text-2xl font-extrabold", green ? "text-emerald-700" : "text-ink")}>{value}</p>
+  <div className="min-w-0 flex-1 rounded-2xl bg-white/95 px-3 py-3 text-left shadow-sm sm:min-w-36 sm:flex-none sm:px-4">
+    <p className="truncate text-xs text-slate-500">{label}</p>
+    <p className={cn("text-lg font-extrabold sm:text-2xl", green ? "text-emerald-700" : "text-ink")}>{value}</p>
   </div>
 );
 
@@ -31,17 +31,17 @@ export default function BookDetails() {
   return (
     <>
       <Link to="/books" className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700"><ChevronLeft className="size-4" /> Back to My Books</Link>
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-navy p-6 text-white md:p-8">
+      <div className="relative mb-6 overflow-hidden rounded-3xl bg-navy p-5 text-white sm:p-6 md:p-8">
         {cover && <img src={cover} alt="" className="absolute inset-0 size-full scale-125 object-cover opacity-40 blur-2xl" />}
         <div className="absolute inset-0 bg-linear-to-r from-navy via-navy/70 to-brand-700/40" />
-        <button onClick={() => shareBook(data, latest?.edition)} className="absolute top-5 right-5 flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold backdrop-blur"><Share2 className="size-4" /> Share</button>
-        <div className="relative flex flex-wrap items-center gap-6">
+        <button onClick={() => shareBook(data, latest?.edition)} className="absolute top-4 right-4 z-10 flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold backdrop-blur active:bg-white/20 sm:top-5 sm:right-5"><Share2 className="size-4" /> Share</button>
+        <div className="relative flex flex-wrap items-center gap-4 sm:gap-6">
           <div className="relative">
             <Cover cover={data.cover} className="h-40 w-28 border-2 border-white/80 shadow-2xl" />
             {latest && <span className="absolute -bottom-2 left-2 rounded-md bg-brand-600 px-2 py-0.5 text-xs font-bold">{ordinal(latest.edition)}</span>}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="bn text-4xl font-bold">{data.nameInBangla || data.nameInEnglish}</h1>
+            <h1 className="bn text-3xl font-bold break-words sm:text-4xl">{data.nameInBangla || data.nameInEnglish}</h1>
             {data.nameInBangla && data.nameInEnglish && <p className="mt-1 text-white/70">{data.nameInEnglish}</p>}
             <div className="mt-3 flex flex-wrap gap-2 text-sm">
               <span className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1"><BookOpen className="size-4" /> {data.editions.length} {data.editions.length === 1 ? "edition" : "editions"}</span>
@@ -49,7 +49,7 @@ export default function BookDetails() {
               {data.role !== "writer" && <span className="rounded-full bg-amber-400 px-3 py-1 font-semibold text-navy">Translator / Editor · no royalty</span>}
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex w-full gap-2 sm:w-auto sm:flex-wrap sm:gap-3">
             <Stat label="Royalty earned" value={<>{taka(data.totals.royalty)}<Est show={data.totals.estimated} /></>} green />
             <Stat label="Copies sold" value={num(data.totals.sold)} />
             <Stat label="Copies left" value={num(data.totals.left)} />
@@ -90,19 +90,19 @@ export default function BookDetails() {
       )}
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-5">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <h2 className="flex items-center gap-2 text-lg font-bold"><ReceiptText className="size-5 text-brand-600" /> Sales Journal</h2>
             <Tabs value={edition} onChange={(value) => { setEdition(value); setPage(1); }} items={[{ value: "all", label: "All" }, ...data.editions.map((row) => ({ value: String(row.edition), label: ordinal(row.edition) }))]} />
           </div>
-          <div className="relative"><Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" /><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setPage(1); }} className="input h-10 w-52 pl-10 text-sm" title="Search by date" /></div>
+          <div className="relative w-full sm:w-auto"><Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" /><input type="date" value={date} onChange={(event) => { setDate(event.target.value); setPage(1); }} className="input h-10 w-full pl-10 text-sm sm:w-52" title="Search by date" /></div>
         </div>
         {journal.isLoading ? <Spinner /> : !journal.data?.rows.length ? <Empty icon={ReceiptText} title="No sales yet" /> : (
           <div className="divide-y divide-slate-100 border-t border-slate-100">
             {journal.data.rows.map((row) => {
               const cancelled = row.status === "cancelled";
               return (
-                <div key={`${row.status}-${row._id}`} className={cn("grid items-center gap-3 px-5 py-3.5 md:grid-cols-[1fr_auto_auto]", cancelled && "bg-slate-50/70")}>
+                <div key={`${row.status}-${row._id}`} className={cn("grid items-center gap-2 px-4 py-3.5 sm:px-5 md:grid-cols-[1fr_auto_auto] md:gap-3", cancelled && "bg-slate-50/70")}>
                   <div className={cn(cancelled && "opacity-60")}>
                     <p className="font-bold">{fmtDateTime(row.date)}</p>
                     <p className="text-sm text-slate-500">Royalty Generated : <span className={cn("font-semibold text-emerald-700", cancelled && "strike text-rose-600")}>{row.royaltyFree ? "Royalty free" : taka(row.royalty)}</span><Est show={row.estimated} /></p>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "@/lib/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeftRight, Check, Download, FileText, History, ReceiptText, Wallet, WalletCards, XCircle } from "lucide-react";
 import { useHistory } from "@/lib/queries";
@@ -44,6 +45,9 @@ export default function RoyaltyHistory() {
     try {
       const rows = await getAll("/author-panel/history", query);
       downloadCsv("royalty-history", [[(row) => dateShort(row.date), "Date"], [(row) => TYPES[row.type]?.pill, "Type"], ["title", "Title"], ["sub", "Details"], [(row) => (row.type === "cancelled" ? 0 : row.amount), "Amount"], ["balance", "Balance"]], rows);
+      toast.success("Excel file downloaded.");
+    } catch (err) {
+      toast.error(err);
     } finally {
       setExporting(false);
     }
@@ -56,7 +60,7 @@ export default function RoyaltyHistory() {
 
   return (
     <>
-      <PageTitle title="Royalty History" right={<div className="no-print flex gap-2"><Button variant="outline" loading={exporting} onClick={exportExcel}><Download className="size-4" /> Excel</Button><PrintStatement label="Download statement" title="Royalty Statement" url="/author-panel/history" params={query} period={periodText(filter)} columns={[["Date", (row) => dateShort(row.date)], ["Type", (row) => TYPES[row.type]?.pill || row.type], ["Details", (row) => `${row.title} — ${row.sub || ""}`], ["Amount", (row) => (row.type === "cancelled" ? "Not added" : taka(row.amount)), true], ["Balance", (row) => taka(row.balance), true]]} /></div>} />
+      <PageTitle title="Royalty History" right={<div className="no-print flex flex-wrap gap-2"><Button variant="outline" loading={exporting} onClick={exportExcel}><Download className="size-4" /> Excel</Button><PrintStatement label="Download statement" title="Royalty Statement" url="/author-panel/history" params={query} period={periodText(filter)} columns={[["Date", (row) => dateShort(row.date)], ["Type", (row) => TYPES[row.type]?.pill || row.type], ["Details", (row) => `${row.title} — ${row.sub || ""}`], ["Amount", (row) => (row.type === "cancelled" ? "Not added" : taka(row.amount)), true], ["Balance", (row) => taka(row.balance), true]]} /></div>} />
       {f && c && (
         <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <Big light className="border-2 border-amber-200 bg-white" label="Available balance" value={taka(f.available)} sub={f.advanceRemaining > 0 ? `Advance ${taka(f.advanceRemaining)} still to be earned back` : `${taka(f.pending)} on hold for withdraw`} />
@@ -67,9 +71,9 @@ export default function RoyaltyHistory() {
         </div>
       )}
       <Card className="no-print mb-5 flex flex-wrap items-center justify-between gap-3 p-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="no-scrollbar -mx-3 flex max-w-[calc(100%+1.5rem)] gap-2 overflow-x-auto px-3 sm:mx-0 sm:max-w-full sm:flex-wrap sm:px-0">
           {[["all", "All"], ["royalty", "Royalty"], ["advance", "Advance"], ["withdraw", "Withdraw"], ["adjustment", "Adjustment"]].map(([key, label]) => (
-            <button key={key} onClick={() => { setType(key); setPage(1); }} className={cn("flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-sm font-semibold", type === key ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600")}>
+            <button key={key} onClick={() => { setType(key); setPage(1); }} className={cn("flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold whitespace-nowrap sm:py-1.5", type === key ? "border-navy bg-navy text-white" : "border-slate-200 text-slate-600")}>
               {label}{key === "all" && <span className="rounded-full bg-white/20 px-1.5 text-xs">{data?.counts?.all ?? 0}</span>}
             </button>
           ))}
@@ -86,7 +90,7 @@ export default function RoyaltyHistory() {
               const amount = row.type === "cancelled" ? row.lost : Math.abs(row.amount);
               const red = row.type === "adjustment" && row.direction !== "add";
               return (
-                <button key={`${row.type}-${row._id}`} onClick={() => open(row)} className={cn("grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 border-l-4 border-l-transparent px-5 py-3.5 text-left hover:bg-slate-50/60 md:grid-cols-[auto_1fr_150px_120px_110px_100px]", meta.border, muted && "bg-slate-50/70")}>
+                <button key={`${row.type}-${row._id}`} onClick={() => open(row)} className={cn("grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 border-l-4 border-l-transparent px-4 py-3.5 text-left hover:bg-slate-50/60 active:bg-slate-50 md:gap-4 md:px-5 md:grid-cols-[auto_1fr_150px_120px_110px_100px]", meta.border, muted && "bg-slate-50/70")}>
                   <span className={cn("grid size-10 place-items-center rounded-xl", meta.tone)}><meta.icon className="size-4" /></span>
                   <div className={cn("min-w-0", muted && "opacity-50")}><p className="bn truncate font-bold">{row.title}</p><p className="truncate text-xs text-slate-500">{row.sub}</p></div>
                   <span className={cn("hidden justify-self-center rounded-full px-3 py-1 text-xs font-semibold md:inline", meta.pillTone)}>{meta.pill}</span>
