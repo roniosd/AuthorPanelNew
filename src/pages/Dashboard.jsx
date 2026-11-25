@@ -12,9 +12,11 @@ import {
   EyeOff,
   Hourglass,
   Layers,
+  MoreVertical,
   ReceiptText,
   Sun,
   TrendingUp,
+  Trophy,
   Undo2,
   Wallet,
   XCircle,
@@ -33,7 +35,7 @@ import {
   ordinal,
   taka,
 } from "@/lib/format";
-import { AreaChart, Donut, PALETTE, SparkBars } from "@/components/charts";
+import { AreaChart, Donut, SparkBars } from "@/components/charts";
 import {
   Badge,
   Card,
@@ -79,7 +81,8 @@ const PERIODS = [
   },
 ];
 
-function MoneyCard({ label, value, icon: Icon, tone }) {
+// Each money card opens Royalty History with its matching type filter (?type=).
+function MoneyCard({ label, value, icon: Icon, tone, to }) {
   const tones = {
     orange:
       "from-amber-50 border-amber-100 text-amber-700 [&_.chip]:bg-amber-500",
@@ -88,9 +91,10 @@ function MoneyCard({ label, value, icon: Icon, tone }) {
       "from-emerald-50 border-emerald-100 text-emerald-700 [&_.chip]:bg-emerald-600",
   };
   return (
-    <div
+    <Link
+      to={to}
       className={cn(
-        "flex items-center justify-between gap-2 rounded-2xl border bg-linear-to-br to-white p-4",
+        "flex items-center justify-between gap-2 rounded-2xl border bg-linear-to-br to-white p-4 transition hover:shadow-md active:scale-[0.99]",
         tones[tone],
       )}
     >
@@ -101,28 +105,26 @@ function MoneyCard({ label, value, icon: Icon, tone }) {
       <span className="chip grid size-11 shrink-0 place-items-center rounded-xl text-white shadow-md">
         <Icon className="size-5" />
       </span>
-    </div>
+    </Link>
   );
 }
 
 function AvailableCard({ value, name }) {
   const [show, setShow] = useState(false);
+  const navigate = useNavigate();
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-brand-500 via-brand-600 to-navy p-4 text-white shadow-lg shadow-brand-600/25 max-sm:-order-1 max-sm:aspect-[1.6] max-sm:rounded-3xl max-sm:p-5">
+    <div role="link" tabIndex={0} onClick={() => navigate("/royalty-history?type=all")} onKeyDown={(event) => event.key === "Enter" && navigate("/royalty-history?type=all")} className="relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-brand-500 via-brand-600 to-navy p-4 text-white shadow-lg shadow-brand-600/25 transition hover:shadow-xl max-sm:-order-1 max-sm:aspect-[1.6] max-sm:rounded-3xl max-sm:p-5">
       <span className="pointer-events-none absolute -right-16 -bottom-20 size-56 rounded-full bg-white/5 sm:hidden" />
       <div className="flex items-center justify-between sm:hidden">
-        <img src="/logo.png" alt="নবকথন" className="h-7 w-auto " />
-        <span className="text-xs font-semibold text-white/70">
-          Royalty Wallet
-        </span>
+        <img src="/logo.png" alt="নবকথন" className="h-7 w-auto brightness-0 invert" />
+        <span className="text-xs font-semibold text-white/70">Royalty Wallet</span>
       </div>
       <span className="absolute top-1/2 right-5 h-10 w-13 -translate-y-1/2 rounded-lg border border-amber-500/40 bg-[linear-gradient(90deg,transparent_45%,rgba(146,64,14,.35)_45%_55%,transparent_55%),linear-gradient(135deg,#fde68a,#f59e0b)] sm:hidden" />
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-semibold text-white/80">
-          Available balance
-        </p>
+        <p className="min-w-0 truncate text-xs font-semibold text-white/80">Available balance</p>
         <Link
           to="/withdraw"
+          onClick={(event) => event.stopPropagation()}
           className="edit-only flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-brand-700 active:bg-white/90 max-sm:absolute max-sm:right-5 max-sm:bottom-5 max-sm:rounded-xl max-sm:px-4 max-sm:py-2.5 max-sm:text-sm"
         >
           <ArrowUp className="size-3" /> Withdraw
@@ -130,7 +132,10 @@ function AvailableCard({ value, name }) {
       </div>
       <button
         type="button"
-        onClick={() => setShow(!show)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setShow(!show);
+        }}
         className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-left"
       >
         <span className="text-2xl font-extrabold max-sm:text-3xl">
@@ -196,7 +201,7 @@ function Recovery({ finance, since }) {
         >
           {taka(r.covered)}
         </span>
-        <div className="relative h-4 overflow-hidden rounded-full bg-[#fdf1de]">
+        <div className="relative h-3 overflow-hidden rounded-full bg-[#fdf1de]">
           <div
             className="h-full w-full origin-left rounded-full bg-[repeating-linear-gradient(135deg,rgb(255_255_255/0.22)_0_6px,transparent_6px_12px),linear-gradient(90deg,#f59e0b,#a3b93a_45%,#16a34a)] animate-progress-fill"
             style={{ "--progress": `${r.percent}%` }}
@@ -347,6 +352,9 @@ function RecentSales({ rows, total }) {
   );
 }
 
+// Design 01: top 5 books in colour, the rest grouped as grey "Others".
+const STATUS_COLORS = ["#2456c7", "#16884a", "#e08a00", "#7c3aed", "#0f7490", "#c5ccd8"];
+
 function BookStatus({ books }) {
   const [active, setActive] = useState(-1);
   const top = books.slice(0, 5);
@@ -359,6 +367,7 @@ function BookStatus({ books }) {
         {
           _id: "others",
           others: rest.length,
+          covers: rest.slice(0, 3).map((book) => book.cover),
           royalty: sum(rest, "royalty"),
           copies: sum(rest, "copies"),
           estimated: rest.some((book) => book.estimated),
@@ -371,38 +380,40 @@ function BookStatus({ books }) {
     total ? Math.round((Number(book.royalty || 0) / total) * 100) : 0;
   return (
     <Card className="p-4 sm:p-5">
-      <CardHead icon={BookOpen} title="Book Royalty Status" />
+      <CardHead icon={Trophy} title="Book Royalty Status" />
       {!books.length ? (
         <Empty icon={BookOpen} title="No books yet" />
       ) : (
         <>
-          <div className="my-5 grid place-items-center">
+          <div className="my-6 grid place-items-center">
             <Donut
+              size={210}
+              stroke={34}
               segments={list.map((book, index) => ({
                 value: Number(book.royalty || 0),
-                color: PALETTE[index],
+                color: STATUS_COLORS[index],
               }))}
               active={active}
               onHover={setActive}
             >
-              <p className="max-w-28 truncate text-[11px] text-slate-500">
+              <p className="max-w-28 truncate text-xs text-slate-500">
                 {picked
                   ? picked.others
                     ? "Others"
                     : bookName(picked)
                   : "Total royalty"}
               </p>
-              <p className="text-2xl font-extrabold">
+              <p className="text-[26px] leading-tight font-extrabold">
                 {taka(picked ? picked.royalty : total)}
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 {picked
                   ? `${share(picked)}% · ${num(picked.copies)} copies`
                   : `${books.length} books`}
               </p>
             </Donut>
           </div>
-          <div className="space-y-1">
+          <div className="divide-y divide-slate-100">
             {list.map((book, index) => (
               <Link
                 key={book._id}
@@ -410,55 +421,59 @@ function BookStatus({ books }) {
                 onMouseEnter={() => setActive(index)}
                 onMouseLeave={() => setActive(-1)}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl p-2 transition active:bg-slate-50",
+                  "flex items-center gap-3 rounded-xl px-1.5 py-3 transition active:bg-slate-50",
                   active === index ? "bg-slate-50" : "hover:bg-slate-50",
                 )}
               >
                 <span
-                  className="size-2.5 shrink-0 rounded-full"
-                  style={{ background: PALETTE[index] }}
-                />
+                  className="grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                  style={{ background: book.others ? "#94a3b8" : STATUS_COLORS[index] }}
+                >
+                  {book.others ? <MoreVertical className="size-4" /> : index + 1}
+                </span>
                 {book.others ? (
-                  <span className="grid h-10 w-7 place-items-center rounded bg-slate-100 text-[11px] font-bold text-slate-500">
-                    +{book.others}
-                  </span>
+                  <div className="relative h-12 w-10 shrink-0">
+                    {book.covers.map((cover, i) => (
+                      <Cover
+                        key={i}
+                        cover={cover}
+                        className="absolute h-11 w-7 ring-2 ring-white"
+                        style={{ left: i * 5, top: i * 1 }}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <Cover cover={book.cover} className="h-10 w-7" />
+                  <Cover cover={book.cover} className="h-12 w-9 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="bn truncate text-sm font-bold">
-                      {book.others
-                        ? `Others (${book.others} books)`
-                        : bookName(book)}
-                    </p>
-                    <span className="shrink-0 text-sm font-bold">
-                      {taka(book.royalty)}
-                      {book.estimated && (
-                        <span className="ml-1 text-[10px] font-semibold text-amber-600">
-                          est.
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${share(book)}%`,
-                          background: PALETTE[index],
-                        }}
-                      />
-                    </div>
-                    <span className="w-20 text-right text-[11px] text-slate-400">
-                      {share(book)}% · {num(book.copies)} sold
-                    </span>
-                  </div>
+                  <p className="bn truncate text-[15px] font-bold">
+                    {book.others ? "Others" : bookName(book)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {book.others
+                      ? `${num(book.others)} books · ${num(book.copies)} copies sold`
+                      : `${num(book.copies)} copies sold`}
+                  </p>
                 </div>
+                <span className="shrink-0 text-[15px] font-bold">
+                  {taka(book.royalty)}
+                  {book.estimated && (
+                    <span className="ml-1 text-[10px] font-semibold text-amber-600">
+                      est.
+                    </span>
+                  )}
+                </span>
               </Link>
             ))}
           </div>
+          {rest.length > 0 && (
+            <Link
+              to="/books"
+              className="mt-3 flex items-center justify-center gap-1 text-sm font-semibold text-brand-700 hover:underline"
+            >
+              See all {num(books.length)} books <ChevronRight className="size-4" />
+            </Link>
+          )}
         </>
       )}
     </Card>
@@ -707,11 +722,7 @@ export default function Dashboard() {
                 {num(data.sales[key].copies)} copies sold
               </p>
             </div>
-            <SparkBars
-              values={data.sales[key].series}
-              color={color}
-              className="h-8 w-12 shrink-0 sm:w-24"
-            />
+            <SparkBars values={data.sales[key].series} color={color} className="h-8 w-12 shrink-0 sm:w-24" />
           </div>
         ))}
       </div>
@@ -722,12 +733,14 @@ export default function Dashboard() {
           value={f.advanceRemaining}
           icon={Undo2}
           tone="orange"
+          to="/royalty-history?type=advance"
         />
         <MoneyCard
           label="Total earned"
           value={f.earned}
           icon={TrendingUp}
           tone="blue"
+          to="/royalty-history?type=royalty"
         />
         <AvailableCard value={f.available} name={authorName(data.author)} />
         <MoneyCard
@@ -735,17 +748,18 @@ export default function Dashboard() {
           value={f.received}
           icon={Check}
           tone="green"
+          to="/royalty-history?type=withdraw"
         />
       </div>
 
       <Recovery finance={f} since={data.latestAdvance?.date} />
 
-      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 xl:grid-cols-[1.5fr_1fr]">
         <RecentSales rows={data.recentSales} total={data.sales.total} />
         <BookStatus books={data.books} />
       </div>
 
-      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-4 sm:gap-5 grid-cols-1 xl:grid-cols-[1.5fr_1fr]">
         <RoyaltyChart data={data} />
         <div className="space-y-4 sm:space-y-5">
           <Received data={data} />

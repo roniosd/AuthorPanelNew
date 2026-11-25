@@ -90,6 +90,7 @@ export function AboutFields({ form, setForm, socialOnly }) {
 // Round preview + drop zone; calls onFile(File) after a local type/size check.
 export function PhotoPicker({ name, photo, preview, onFile, uploading, error, showPhoto, onShowPhoto }) {
   const input = useRef(null);
+  const camera = useRef(null);
   const pick = (file) => file && onFile(file);
   return (
     <div className="space-y-5">
@@ -98,7 +99,13 @@ export function PhotoPicker({ name, photo, preview, onFile, uploading, error, sh
           {preview ? <img src={preview} alt="" className="size-32 rounded-full object-cover" /> : <Avatar name={name} photo={photo} size="size-32" className="bg-brand-50 text-5xl text-brand-700" />}
           <button type="button" onClick={() => input.current?.click()} className="absolute right-2 bottom-2 grid size-9 place-items-center rounded-full bg-amber-400 text-white shadow"><Camera className="size-4" /></button>
         </div>
-        <div className="w-full flex-1 rounded-2xl border-2 border-dashed border-slate-200 p-6" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); pick(event.dataTransfer.files?.[0]); }}>
+        <div className="grid w-full grid-cols-2 gap-3 sm:hidden">
+          <button type="button" disabled={uploading} onClick={() => input.current?.click()} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-brand-700 text-sm font-semibold text-white disabled:opacity-60"><ImagePlus className="size-4" /> {uploading ? "Uploading…" : "Choose photo"}</button>
+          <button type="button" disabled={uploading} onClick={() => camera.current?.click()} className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 disabled:opacity-60"><Camera className="size-4" /> Take photo</button>
+          {error && <p className="col-span-2 text-xs text-rose-600">{error}</p>}
+        </div>
+        <input ref={camera} type="file" accept="image/*" capture="user" className="hidden" onChange={(event) => { pick(event.target.files?.[0]); event.target.value = ""; }} />
+        <div className="w-full flex-1 rounded-2xl border-2 border-dashed border-slate-200 p-6 max-sm:hidden" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); pick(event.dataTransfer.files?.[0]); }}>
           <p className="font-semibold">Drag a photo here</p>
           <p className="mt-1 text-xs text-slate-500">JPG, PNG or WEBP, up to 5 MB. A clear, front-facing photo works best.</p>
           <button type="button" disabled={uploading} onClick={() => input.current?.click()} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"><ImagePlus className="size-4" /> {uploading ? "Uploading…" : "Choose photo"}</button>

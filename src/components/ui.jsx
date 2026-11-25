@@ -75,15 +75,19 @@ export const Card = ({ className, children, ...props }) => (
   </div>
 );
 
+// Title on the left, actions on the right. When the card itself is narrow (container < 24rem)
+// and the right side holds Tabs, the tabs drop to their own full-width row with equal buttons.
 export function CardHead({ icon: Icon, title, sub, right, className }) {
   return (
-    <div className={cn("flex items-center justify-between gap-3", className)}>
-      <div className="flex min-w-0 items-center gap-2.5">
-        {Icon && <Icon className="size-4 shrink-0 text-brand-600" />}
-        <h3 className="min-w-0 text-sm font-bold">{title}</h3>
-        {sub && <span className="text-xs text-slate-400">{sub}</span>}
+    <div className={cn("@container", className)}>
+      <div className="flex items-center justify-between gap-3 @max-sm:has-[[role=tablist]]:flex-col @max-sm:has-[[role=tablist]]:items-stretch @max-sm:has-[[role=tablist]]:gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {Icon && <Icon className="size-4 shrink-0 text-brand-600" />}
+          <h3 className="min-w-0 truncate text-sm font-bold">{title}</h3>
+          {sub && <span className="truncate text-xs text-slate-400 @max-xs:hidden">{sub}</span>}
+        </div>
+        {right && <div className="flex min-w-0 shrink-0 justify-end @max-sm:[&_[role=tablist]]:flex @max-sm:[&_[role=tablist]]:w-full @max-sm:[&_[role=tab]]:flex-1">{right}</div>}
       </div>
-      {right}
     </div>
   );
 }
@@ -205,11 +209,14 @@ export function Tabs({ value, onChange, items, className }) {
         "no-scrollbar inline-flex max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1",
         className,
       )}
+      role="tablist"
     >
       {items.map((item) => (
         <button
           key={item.value}
           type="button"
+          role="tab"
+          aria-selected={value === item.value}
           onClick={() => onChange(item.value)}
           className={cn(
             "shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition",

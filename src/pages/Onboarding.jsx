@@ -49,7 +49,7 @@ export default function Onboarding() {
   const [agree, setAgree] = useState(false);
   const linked = onboarding.data?.linked !== false && !profile.isError;
   // Onboarding already finished but required personal data is missing: only ask for that.
-  const [fix, setFix] = useState(false);
+  const [fix, setFix] = useState(0);
   const incomplete = linked && profileIncomplete(profile.data);
 
   useEffect(() => {
@@ -60,8 +60,9 @@ export default function Onboarding() {
   }, [profile.data]);
   useEffect(() => {
     if (onboarding.data && !onboarding.data.needed && incomplete && !fix) {
-      setFix(true);
-      setStep(2);
+      const start = profile.data?.photo ? 2 : 1;
+      setFix(start);
+      setStep(start);
     }
   }, [onboarding.data, incomplete, fix]);
   useEffect(() => {
@@ -72,6 +73,11 @@ export default function Onboarding() {
   if (onboarding.data && !onboarding.data.needed && !incomplete && !fix && step < 7) return <Navigate to="/" replace />;
 
   const name = authorName(profile.data) || user?.name;
+  // "Skip for now" on the missing-details step: dashboard for this sign-in, asked again next login.
+  const leave = () => {
+    skipOnboarding(token);
+    navigate("/", { replace: true });
+  };
   const go = (next) => {
     setErrors({});
     setError("");
@@ -126,8 +132,7 @@ export default function Onboarding() {
         return run(async () => {
           await actions.saveProfile(personalPayload(form));
           await profile.refetch();
-          navigate("/", { replace: true });
-        }, 2);
+        }, 7);
       }
       run(() => actions.saveProfile(personalPayload(form)), 3);
     },
@@ -160,14 +165,13 @@ export default function Onboarding() {
     <div className="space-y-4">
       {!linked && step !== 3 && step !== 5 && <ErrorBox error="Your website profile is not linked yet, so photo and personal details cannot be saved now. You can continue and add them later from Profile." />}
       {error && <ErrorBox error={error} />}
-      <StepFooter onBack={step > 1 && !fix ? () => go(step - 1) : null} onNext={next[step]} loading={saving} disabled={step === 5 && !agree} nextLabel={step === 5 ? "Finish" : "Save and continue"} extra={step === 4 && <Button variant="ghost" size="lg" onClick={() => go(5)}>Skip</Button>} />
+      <StepFooter onBack={step > (fix || 1) ? () => go(step - 1) : null} onNext={next[step]} loading={saving} disabled={step === 5 && !agree} nextLabel={step === 5 ? "Finish setup" : "Save and continue"} extra={(step === 1 || step === 4 || (fix && step === 2)) && <button type="button" onClick={() => (fix && step === 2 ? leave() : go(step + 1))} className="shrink-0 px-1 text-sm font-semibold text-slate-500 underline underline-offset-4 hover:text-navy sm:px-2 sm:text-base">Skip<span className="max-sm:hidden"> for now</span></button>} />
     </div>
   );
 
   return (
     <AuthShell name={name} footer={footer}>
-      {step < 5 && <div className="-mt-2 mb-4 flex justify-end"><button type="button" onClick={() => { skipOnboarding(token); navigate("/", { replace: true }); }} className="rounded-full border border-slate-200 px-4 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-50">Skip for now</button></div>}
-      {!fix && <Stepper step={step === 7 ? 6 : step} />}
+      <Stepper step={step === 7 ? 6 : step} />
 
       {step === 1 && (
         <>
