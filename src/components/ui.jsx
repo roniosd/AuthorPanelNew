@@ -86,7 +86,7 @@ export function CardHead({ icon: Icon, title, sub, right, className }) {
           <h3 className="min-w-0 truncate text-sm font-bold">{title}</h3>
           {sub && <span className="truncate text-xs text-slate-400 @max-xs:hidden">{sub}</span>}
         </div>
-        {right && <div className="flex min-w-0 shrink-0 justify-end @max-sm:[&_[role=tablist]]:flex @max-sm:[&_[role=tablist]]:w-full @max-sm:[&_[role=tab]]:flex-1">{right}</div>}
+        {right && <div className="flex min-w-0 shrink-0 justify-end @max-sm:**:[[role=tablist]]:flex @max-sm:**:[[role=tablist]]:w-full @max-sm:**:[[role=tab]]:flex-1">{right}</div>}
       </div>
     </div>
   );
