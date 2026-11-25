@@ -14,7 +14,7 @@ export const useNotifications = (params, options = {}) => useQuery({ queryKey: [
 export const useOnboarding = (enabled = true) => useQuery({ queryKey: ["onboarding"], queryFn: () => get(`${P}/onboarding`), enabled });
 export const usePosProfile = () => useQuery({ queryKey: ["pos-profile"], queryFn: () => get(`${P}/profile`) });
 // Website profile through the POS proxy; errors here never sign the author out (see api.js).
-export const useProfile = () => useQuery({ queryKey: ["self-profile"], queryFn: async () => (await api.get("/author/self-profile")).data.author, retry: false });
+export const useProfile = (enabled = true) => useQuery({ queryKey: ["self-profile"], queryFn: async () => (await api.get("/author/self-profile")).data.author, retry: false, enabled });
 // Name and photo of the signed-in author: website profile first (photo is managed there), POS as fallback.
 export function useMe() {
   const { data: profile } = useProfile();

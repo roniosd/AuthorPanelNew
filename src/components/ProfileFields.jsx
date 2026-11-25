@@ -43,6 +43,9 @@ export const personalErrors = (form) => {
   return errors;
 };
 
+// True when a required personal field (phone, DOB, gender, NID/birth certificate, address) is missing or invalid.
+export const profileIncomplete = (profile) => Boolean(profile) && Object.keys(personalErrors(fromProfile(profile))).length > 0;
+
 const Choice = ({ active, onClick, children }) => <button type="button" onClick={onClick} className={cn("h-12 rounded-xl border text-[15px] font-semibold transition", active ? "border-navy bg-brand-50 text-navy ring-1 ring-navy" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>{children}</button>;
 const Icon = ({ icon: I, children }) => <div className="relative">{<I className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" />}{children}</div>;
 export const SocialDot = ({ type }) => (type === "facebook" ? <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#1877f2] text-xs font-black text-white">f</span> : type === "youtube" ? <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#ff0000] text-[9px] text-white">▶</span> : <span className="grid size-6 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500"><Globe className="size-3.5" /></span>);

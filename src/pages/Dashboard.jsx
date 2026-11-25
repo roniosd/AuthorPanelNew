@@ -111,12 +111,16 @@ function AvailableCard({ value, name }) {
     <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-br from-brand-500 via-brand-600 to-navy p-4 text-white shadow-lg shadow-brand-600/25 max-sm:-order-1 max-sm:aspect-[1.6] max-sm:rounded-3xl max-sm:p-5">
       <span className="pointer-events-none absolute -right-16 -bottom-20 size-56 rounded-full bg-white/5 sm:hidden" />
       <div className="flex items-center justify-between sm:hidden">
-        <img src="/logo.png" alt="নবকথন" className="h-7 w-auto brightness-0 invert" />
-        <span className="text-xs font-semibold text-white/70">Royalty Wallet</span>
+        <img src="/logo.png" alt="নবকথন" className="h-7 w-auto " />
+        <span className="text-xs font-semibold text-white/70">
+          Royalty Wallet
+        </span>
       </div>
       <span className="absolute top-1/2 right-5 h-10 w-13 -translate-y-1/2 rounded-lg border border-amber-500/40 bg-[linear-gradient(90deg,transparent_45%,rgba(146,64,14,.35)_45%_55%,transparent_55%),linear-gradient(135deg,#fde68a,#f59e0b)] sm:hidden" />
       <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-semibold text-white/80">Available balance</p>
+        <p className="min-w-0 truncate text-xs font-semibold text-white/80">
+          Available balance
+        </p>
         <Link
           to="/withdraw"
           className="edit-only flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-brand-700 active:bg-white/90 max-sm:absolute max-sm:right-5 max-sm:bottom-5 max-sm:rounded-xl max-sm:px-4 max-sm:py-2.5 max-sm:text-sm"
@@ -185,16 +189,16 @@ function Recovery({ finance, since }) {
           />
         </div>
       </div>
-      <div className="relative pt-7">
+      <div className="relative pt-8">
         <span
-          className="absolute top-0 -translate-x-1/2 rounded-md bg-navy px-2 py-0.5 text-[11px] font-bold text-white"
+          className="absolute top-0 z-10 -translate-x-1/2 rounded-md bg-navy px-2 py-0.5 text-[11px] font-bold text-white shadow-md after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-navy after:content-['']"
           style={{ left: `${Math.min(Math.max(r.percent, 6), 94)}%` }}
         >
           {taka(r.covered)}
         </span>
-        <div className="relative h-3 overflow-hidden rounded-full bg-amber-100 animate-pulse">
+        <div className="relative h-4 overflow-hidden rounded-full bg-[#fdf1de]">
           <div
-            className="h-full w-full origin-left rounded-full bg-[repeating-linear-gradient(135deg,#f59e0b_0_10px,#84cc16_10px_20px,#16a34a_20px_30px)] animate-progress-fill"
+            className="h-full w-full origin-left rounded-full bg-[repeating-linear-gradient(135deg,rgb(255_255_255/0.22)_0_6px,transparent_6px_12px),linear-gradient(90deg,#f59e0b,#a3b93a_45%,#16a34a)] animate-progress-fill"
             style={{ "--progress": `${r.percent}%` }}
           />
         </div>
@@ -703,7 +707,11 @@ export default function Dashboard() {
                 {num(data.sales[key].copies)} copies sold
               </p>
             </div>
-            <SparkBars values={data.sales[key].series} color={color} className="h-8 w-12 shrink-0 sm:w-24" />
+            <SparkBars
+              values={data.sales[key].series}
+              color={color}
+              className="h-8 w-12 shrink-0 sm:w-24"
+            />
           </div>
         ))}
       </div>

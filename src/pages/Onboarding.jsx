@@ -8,7 +8,7 @@ import { actions, useAction, useOnboarding, usePayMethods, usePosProfile, usePro
 import { authorName, fmtDate, methodSub, methodTitle } from "@/lib/format";
 import { AuthShell, StepFooter, StepTitle, Stepper } from "@/components/AuthShell";
 import PayMethodForm, { emptyMethod, methodErrors, toPayload } from "@/components/PayMethodForm";
-import { AboutFields, PersonalFields, PhotoPicker, aboutPayload, checkPhoto, fromProfile, personalErrors, personalPayload } from "@/components/ProfileFields";
+import { AboutFields, PersonalFields, PhotoPicker, aboutPayload, checkPhoto, fromProfile, personalErrors, personalPayload, profileIncomplete } from "@/components/ProfileFields";
 import { Avatar, Button, ErrorBox, Spinner } from "@/components/ui";
 
 const Heading = StepTitle;
@@ -48,6 +48,9 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [agree, setAgree] = useState(false);
   const linked = onboarding.data?.linked !== false && !profile.isError;
+  // Onboarding already finished but required personal data is missing: only ask for that.
+  const [fix, setFix] = useState(false);
+  const incomplete = linked && profileIncomplete(profile.data);
 
   useEffect(() => {
     if (profile.data) {
@@ -56,11 +59,17 @@ export default function Onboarding() {
     }
   }, [profile.data]);
   useEffect(() => {
+    if (onboarding.data && !onboarding.data.needed && incomplete && !fix) {
+      setFix(true);
+      setStep(2);
+    }
+  }, [onboarding.data, incomplete, fix]);
+  useEffect(() => {
     if (posProfile.data) setForm((state) => ({ ...state, education: posProfile.data.education || "" }));
   }, [posProfile.data]);
 
   if (onboarding.isLoading || profile.isLoading) return <Spinner className="min-h-screen" />;
-  if (onboarding.data && !onboarding.data.needed && step < 7) return <Navigate to="/" replace />;
+  if (onboarding.data && !onboarding.data.needed && !incomplete && !fix && step < 7) return <Navigate to="/" replace />;
 
   const name = authorName(profile.data) || user?.name;
   const go = (next) => {
@@ -113,6 +122,13 @@ export default function Onboarding() {
         toast.error("Please fix the highlighted fields.");
         return setErrors(found);
       }
+      if (fix) {
+        return run(async () => {
+          await actions.saveProfile(personalPayload(form));
+          await profile.refetch();
+          navigate("/", { replace: true });
+        }, 2);
+      }
       run(() => actions.saveProfile(personalPayload(form)), 3);
     },
     3: () => {
@@ -144,14 +160,14 @@ export default function Onboarding() {
     <div className="space-y-4">
       {!linked && step !== 3 && step !== 5 && <ErrorBox error="Your website profile is not linked yet, so photo and personal details cannot be saved now. You can continue and add them later from Profile." />}
       {error && <ErrorBox error={error} />}
-      <StepFooter onBack={step > 1 ? () => go(step - 1) : null} onNext={next[step]} loading={saving} disabled={step === 5 && !agree} nextLabel={step === 5 ? "Finish" : "Save and continue"} extra={step === 4 && <Button variant="ghost" size="lg" onClick={() => go(5)}>Skip</Button>} />
+      <StepFooter onBack={step > 1 && !fix ? () => go(step - 1) : null} onNext={next[step]} loading={saving} disabled={step === 5 && !agree} nextLabel={step === 5 ? "Finish" : "Save and continue"} extra={step === 4 && <Button variant="ghost" size="lg" onClick={() => go(5)}>Skip</Button>} />
     </div>
   );
 
   return (
     <AuthShell name={name} footer={footer}>
       {step < 5 && <div className="-mt-2 mb-4 flex justify-end"><button type="button" onClick={() => { skipOnboarding(token); navigate("/", { replace: true }); }} className="rounded-full border border-slate-200 px-4 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-50">Skip for now</button></div>}
-      <Stepper step={step === 7 ? 6 : step} />
+      {!fix && <Stepper step={step === 7 ? 6 : step} />}
 
       {step === 1 && (
         <>
@@ -162,7 +178,7 @@ export default function Onboarding() {
 
       {step === 2 && (
         <>
-          <Heading title="Personal information" />
+          <Heading title="Personal information" sub={fix ? "Some required details are missing. Please complete them to continue." : undefined} />
           <div className="mb-8 flex items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
             <Avatar name={name} photo={profile.data?.photo} />
             <div className="min-w-0 flex-1">

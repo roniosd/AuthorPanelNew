@@ -119,7 +119,7 @@ export default function WithdrawHistory() {
             <p className="px-5 py-4 text-sm text-slate-400">Showing 1–{rows.length} of {rows.length}</p>
           </div>
           <div className="hidden overflow-x-auto xl:block">
-            <table className="w-full min-w-[1000px] text-[15px]">
+            <table className="w-full min-w-250 text-[15px]">
               <thead className="text-left text-sm text-slate-500"><tr>{["SL", "Withdraw ID", "Requested", "Amount", "Sent to", "Status", "Paid / Cancelled", "Transaction ID", "Action"].map((head) => <th key={head} className={cn("px-4 py-4 font-semibold", head === "Amount" && "text-right", head === "Action" && "text-center")}>{head}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((row, index) => {

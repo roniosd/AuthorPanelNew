@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth, onboardingSkipped } from "@/lib/auth";
-import { useOnboarding } from "@/lib/queries";
+import { useOnboarding, useProfile } from "@/lib/queries";
+import { profileIncomplete } from "@/components/ProfileFields";
 import Layout from "@/components/Layout";
 import { Spinner } from "@/components/ui";
 import Login from "@/pages/Login";
@@ -23,14 +24,16 @@ const Notifications = page(() => import("@/pages/Notifications"));
 const Receipt = page(() => import("@/pages/Receipt"));
 const ViewPanel = page(() => import("@/pages/ViewPanel"));
 
-// Signed-in pages; new authors are sent to the onboarding first.
+// Signed-in pages; new authors, and authors with missing required profile data, are sent to the onboarding first.
 function Private({ children }) {
   const { token, viewOnly } = useAuth();
   const location = useLocation();
   const onboarding = useOnboarding(Boolean(token));
+  const profile = useProfile(Boolean(token) && !viewOnly);
   if (!token) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (onboarding.isLoading) return <Spinner className="min-h-screen" />;
-  if (onboarding.data?.needed && !viewOnly && !onboardingSkipped(token)) return <Navigate to="/welcome" replace />;
+  if (onboarding.isLoading || profile.isLoading) return <Spinner className="min-h-screen" />;
+  const needed = onboarding.data?.needed || profileIncomplete(profile.data);
+  if (needed && !viewOnly && !onboardingSkipped(token)) return <Navigate to="/welcome" replace />;
   return children;
 }
 
